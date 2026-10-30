@@ -1,26 +1,291 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/* ========================================================================
+   PassaNorte Design System — "Rio Negro"
+   ------------------------------------------------------------------------
+   Painel administrativo (SPE-01..07): shell com navegação lateral, tabelas
+   CRUD, formulários, scanner de resgate e dashboard analítico.
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+   Identidade: tinta esverdeada como o Rio Negro; verde mata é a cor de
+   AÇÃO (primary); ocre âmbar é reservado à GAMIFICAÇÃO (brindes, ranking,
+   insígnias); mono tipográfico para dados duros (lat/long, códigos de
+   resgate, valores). Vermelho indica irreversível (remoção, erro de API).
+
+   Semântica de status (amarrada aos requisitos):
+   - RF15 status do ponto:     aberto → success | temporariamente fechado
+     → warning | fechado permanentemente → danger
+   - RF20 estoque de brinde:   disponível → success | baixo → warning |
+     esgotado → danger
+   - Princípio V da constituição: loading (info/animate-pulse), vazio
+     (muted) e erro (danger) são estados de primeira classe em toda
+     interação com a API.
+   - Ações destrutivas (RF05/RF12/RF17/RF19): sempre danger + confirmação.
+   - SPE-02 credenciais geradas: exibir uma única vez (accent + aviso).
+
+   Gráficos (SPE-07): use chart-1..6 em ordem fixa por entidade (nunca
+   ciclando); rampa chart-heat-* para o mapa de calor (RF06, sequential:
+   um matiz, claro→escuro no claro / escuro→claro no escuro); chart-div-*
+   para polaridade. Status NUNCA vira cor de série. Valores/rótulos usam
+   tokens de texto, não a cor da série. Paletas categóricas validadas para
+   daltônicos (deutan/tritan) sobre ambas as superfícies.
+   ======================================================================== */
+
+/* ---- Tokens semânticos (mudam por modo) -------------------------------- */
+
+:root {
+  color-scheme: light;
+
+  /* Superfície e texto */
+  --background: #f2f4f0; /* página: neutro esverdeado frio (não creme) */
+  --surface: #ffffff; /* cartões, tabelas, formulários */
+  --surface-muted: #eaeee8; /* cabeçalho de tabela, inputs, skeleton */
+  --foreground: #14231c;
+  --foreground-muted: #5b6c61;
+  --border: #dbe2d8;
+
+  /* Ação (primary — verde mata) */
+  --primary: #1c6b50;
+  --primary-hover: #155640;
+  --primary-foreground: #f1f7f2;
+  --primary-soft: #dcede3;
+  --primary-soft-foreground: #14553e;
+
+  /* Gamificação (accent — ocre âmbar; só aqui e em destaques de recompensa) */
+  --accent: #b45309;
+  --accent-foreground: #fff9f0;
+  --accent-soft: #f7e9d6;
+  --accent-soft-foreground: #7e4310;
+
+  /* Estado: sucesso (ponto aberto, resgate ok, estoque saudável) */
+  --success: #1a7f37;
+  --success-foreground: #f0f9f1;
+  --success-soft: #def2e2;
+  --success-soft-foreground: #14662b;
+
+  /* Estado: atenção (temporariamente fechado, estoque baixo, aviso) */
+  --warning: #9a6700;
+  --warning-foreground: #fffbf2;
+  --warning-soft: #faeec8;
+  --warning-soft-foreground: #7a5200;
+
+  /* Estado: crítico (fechado permanente, erro de API, ação destrutiva) */
+  --danger: #b3261e;
+  --danger-foreground: #fff5f4;
+  --danger-soft: #fadddb;
+  --danger-soft-foreground: #9c2019;
+
+  /* Estado: informativo (loading, mensagens neutras da API) */
+  --info: #175cd3;
+  --info-foreground: #f2f7ff;
+  --info-soft: #dbeafc;
+  --info-soft-foreground: #12449b;
+
+  --ring: #1c6b50;
+
+  /* Gráficos — série 1..6 em ordem fixa (paleta validada p/ CVD) */
+  --chart-1: #2662c9;
+  --chart-2: #177b4b;
+  --chart-3: #7b45b5;
+  --chart-4: #0d9494;
+  --chart-5: #b8790f;
+  --chart-6: #c2487e;
+
+  /* Mapa de calor (RF06) — sequential: 1 = menos intenso */
+  --chart-heat-1: #dff0e7;
+  --chart-heat-2: #b2dcc5;
+  --chart-heat-3: #7fbfa2;
+  --chart-heat-4: #479a7d;
+  --chart-heat-5: #1c6b50;
+
+  /* Divergente (polaridade) — verde ↔ vermelho, neutro no meio */
+  --chart-div-negative: #c4463c;
+  --chart-div-neutral: #e3e8e1;
+  --chart-div-positive: #177b4b;
+
+  /* Elevação */
+  --shadow-overlay: 0 4px 16px rgb(19 32 25 / 0.09);
+
+  /* Movimento */
+  --duration-fast: 150ms;
+  --duration-slow: 300ms;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    color-scheme: dark;
+
+    --background: #0f1512;
+    --surface: #171f1a;
+    --surface-muted: #212b24;
+    --foreground: #e6ede7;
+    --foreground-muted: #9dafa2;
+    --border: #2b352d;
+
+    --primary: #57b98f;
+    --primary-hover: #6bc79e;
+    --primary-foreground: #0b2a1d;
+    --primary-soft: #1d3a2c;
+    --primary-soft-foreground: #7ecba5;
+
+    --accent: #dfa03a;
+    --accent-foreground: #2a1b03;
+    --accent-soft: #3a2e1a;
+    --accent-soft-foreground: #e2b265;
+
+    --success: #6fbe74;
+    --success-foreground: #0b2a12;
+    --success-soft: #1f3b24;
+    --success-soft-foreground: #93d398;
+
+    --warning: #e0a93e;
+    --warning-foreground: #231a03;
+    --warning-soft: #3b3319;
+    --warning-soft-foreground: #e4c26a;
+
+    --danger: #ea6a60;
+    --danger-foreground: #2a0d0b;
+    --danger-soft: #3f2320;
+    --danger-soft-foreground: #f2938c;
+
+    --info: #5e9be8;
+    --info-foreground: #0d2038;
+    --info-soft: #1e2f44;
+    --info-soft-foreground: #8fbdf2;
+
+    --ring: #74d4a8;
+
+    --chart-1: #5e8be8;
+    --chart-2: #35a86e;
+    --chart-3: #9d7fe3;
+    --chart-4: #1fa9ad;
+    --chart-5: #bc8b12;
+    --chart-6: #db5e9c;
+
+    /* No escuro a rampa inverte: 5 = menos intenso, 1 = mais intenso */
+    --chart-heat-1: #b8e3cc;
+    --chart-heat-2: #82c6a2;
+    --chart-heat-3: #4fa37a;
+    --chart-heat-4: #2a6b4e;
+    --chart-heat-5: #1b4030;
+
+    --chart-div-negative: #e06a5c;
+    --chart-div-neutral: #48524b;
+    --chart-div-positive: #4fbf82;
+
+    --shadow-overlay: 0 4px 16px rgb(0 0 0 / 0.4);
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* ---- Mapeamento para utilitários Tailwind ------------------------------- */
+/* @theme inline: referencia vars que trocam por modo (via media query).    */
+/* Se SPE-01 adicionar alternância manual de tema, trocar a media query por */
+/* seletor `.dark { … }` + @custom-variant dark — os utilitários não mudam. */
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-foreground: var(--foreground);
+  --color-foreground-muted: var(--foreground-muted);
+  --color-border: var(--border);
+
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-soft: var(--primary-soft);
+  --color-primary-soft-foreground: var(--primary-soft-foreground);
+
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent-soft: var(--accent-soft);
+  --color-accent-soft-foreground: var(--accent-soft-foreground);
+
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-success-soft: var(--success-soft);
+  --color-success-soft-foreground: var(--success-soft-foreground);
+
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-warning-soft: var(--warning-soft);
+  --color-warning-soft-foreground: var(--warning-soft-foreground);
+
+  --color-danger: var(--danger);
+  --color-danger-foreground: var(--danger-foreground);
+  --color-danger-soft: var(--danger-soft);
+  --color-danger-soft-foreground: var(--danger-soft-foreground);
+
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  --color-info-soft: var(--info-soft);
+  --color-info-soft-foreground: var(--info-soft-foreground);
+
+  --color-ring: var(--ring);
+
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-chart-6: var(--chart-6);
+  --color-chart-heat-1: var(--chart-heat-1);
+  --color-chart-heat-2: var(--chart-heat-2);
+  --color-chart-heat-3: var(--chart-heat-3);
+  --color-chart-heat-4: var(--chart-heat-4);
+  --color-chart-heat-5: var(--chart-heat-5);
+  --color-chart-div-negative: var(--chart-div-negative);
+  --color-chart-div-neutral: var(--chart-div-neutral);
+  --color-chart-div-positive: var(--chart-div-positive);
+
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  --shadow-overlay: var(--shadow-overlay);
+
+  --duration-fast: var(--duration-fast);
+  --duration-slow: var(--duration-slow);
+}
+
+/* ---- Base ----
+   Bordas: v4 usa currentColor por padrão; o painel inteiro desenha com
+   linhas esverdeadas discretas (bordas antes de sombras).                  */
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+
+  body {
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+  }
+
+  /* Navegação por teclado é requisito da constituição — foco sempre visível */
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  ::selection {
+    background: var(--primary-soft);
+    color: var(--primary-soft-foreground);
+  }
+
+  * {
+    scrollbar-color: var(--border) transparent;
+  }
+
+  /* Movimento não disparado é restrito; quem pede menos movimento, recebe */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms;
+      animation-iteration-count: 1;
+      transition-duration: 0.01ms;
+      scroll-behavior: auto;
+    }
+  }
 }
