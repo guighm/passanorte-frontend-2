@@ -54,6 +54,8 @@ Para **cada spec da lista**, na ordem de implementação da Seção 3, executar 
 
 **Convenções que valem para todas as specs** (repetir sempre que forem citadas): a API FastAPI é o contrato em Swagger/OpenAPI; nenhum dado sensível é armazenado no frontend além do JWT de sessão; ações administrativas devem refletir estados de carregamento/erro de API com feedback claro ao operador.
 
+**Follow-up de contrato do backend (SPE-01, registrado em 2026-10-30):** o Swagger real da API FastAPI ainda não está acessível neste repositório; a SPE-01 opera com o *contrato esperado* de `specs/001-panel-foundation-auth/contracts/auth-api.md` como **baseline** e mocks temporários. Quando o backend subir, o **compare campo a campo desse contrato contra o Swagger `/docs` é task obrigatória** — divergências atualizam spec + contrato **antes** de `/speckit-implement` reexecutar as tasks afetadas, e a SPE-01 não pode ser declarada encerrada sem esse compare.
+
 ---
 
 ## 3. Ordem de implementação
