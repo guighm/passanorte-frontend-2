@@ -4,6 +4,7 @@
 // Server Functions (doc cookies.md do Next 16); Server Components só leem.
 
 import { cookies } from "next/headers";
+import { io } from "next/cache";
 import type { PanelSession, SessionState } from "@/features/auth/types";
 import type { LoginResponse } from "@/features/auth/types";
 import {
@@ -35,6 +36,11 @@ function encode(payload: PanelSession): string {
  * renovação server-side pode salvá-la, US3; guardas deixam passar).
  */
 export async function getSession(): Promise<SessionState | null> {
+  // A checagem de expiração abaixo compara com Date.now(), que o
+  // prerender com cacheComponents não aceita mesmo após cookies():
+  // io() suspende aqui (exclui o trecho do shell estático) e resolve
+  // imediatamente em requests reais, Server Functions e Route Handlers.
+  await io();
   const store = await cookies();
   const raw = store.get(SESSION_COOKIE)?.value;
   if (!raw) return null;
