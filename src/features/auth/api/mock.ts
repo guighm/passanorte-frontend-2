@@ -8,7 +8,7 @@ import type {
   LoginResponse,
   Operator,
   Role,
-} from "@/features/auth/types1";
+} from "@/features/auth/types";
 
 // T038: env malformado (ex.: "10d") não pode virar NaN — tokens fixtures
 // sempre expirados quebrariam o cenário C3 silenciosamente.

@@ -4,7 +4,7 @@
 // sessão (FR-007); NUNCA retrata renovação indefinidamente.
 
 import { refresh } from "@/features/auth/api";
-import type { PanelSession } from "@/features/auth/types1";
+import type { PanelSession } from "@/features/auth/types";
 import { clearSession, getSession, setSession } from "@/features/auth/session";
 
 let inFlight: Promise<PanelSession | null> | null = null;
