@@ -1,4 +1,4 @@
-// /beneficios (US2 T020): landing do funcionário — única área acessível a
+// /benefits (US2 T020): landing do funcionário — única área acessível a
 // funcionário (RF03). A concessão de brindes (scanner, validação e
 // confirmação) é definida na SPE-06.
 

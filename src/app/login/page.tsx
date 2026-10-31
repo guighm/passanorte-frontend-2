@@ -55,7 +55,7 @@ async function LoginPanel({
   }
 
   const params = await searchParams;
-  const sessionEnded = params.reason === "sessao-expirada";
+  const sessionEnded = params.reason === "session-expired";
 
   return (
     <>

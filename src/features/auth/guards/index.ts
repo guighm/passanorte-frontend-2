@@ -9,17 +9,17 @@
 import type { PanelSession, Role } from "@/features/auth/types";
 
 /** Padrões de rota do painel (ordem de especificidade não importa: 1:1). */
-export type RoutePattern = "/" | "/admin/*" | "/beneficios" | "/login";
+export type RoutePattern = "/" | "/admin/*" | "/benefits" | "/login";
 
 const ROLE_RULES: { pattern: RoutePattern; roles: readonly (Role | "any")[] }[] = [
   { pattern: "/", roles: ["administrador"] },
   { pattern: "/admin/*", roles: ["administrador"] },
-  { pattern: "/beneficios", roles: ["administrador", "funcionario"] },
+  { pattern: "/benefits", roles: ["administrador", "funcionario"] },
 ];
 
 /** Páginas iniciais por papel (redirecionamento pós-login, FR-004). */
 export function homePathForRole(role: Role): string {
-  return role === "funcionario" ? "/beneficios" : "/";
+  return role === "funcionario" ? "/benefits" : "/";
 }
 
 function matchesPattern(pathname: string, pattern: RoutePattern): boolean {
@@ -72,9 +72,9 @@ export function readSessionCookie(sessionCookie?: string, refreshCookie?: string
 export const NAV_ITEMS: { href: string; label: string; spec: string }[] = [
   { href: "/", label: "Início", spec: "SPE-01" },
   { href: "/admin/dashboard", label: "Dashboard e Insights", spec: "SPE-07" },
-  { href: "/admin/pontos", label: "Pontos Turísticos", spec: "SPE-03" },
-  { href: "/admin/eventos", label: "Eventos", spec: "SPE-04" },
-  { href: "/admin/rotas", label: "Rotas e Benefícios", spec: "SPE-05" },
-  { href: "/admin/funcionarios", label: "Funcionários", spec: "SPE-02" },
-  { href: "/beneficios", label: "Benefícios", spec: "SPE-06" },
+  { href: "/admin/attractions", label: "Pontos Turísticos", spec: "SPE-03" },
+  { href: "/admin/events", label: "Eventos", spec: "SPE-04" },
+  { href: "/admin/tours", label: "Rotas e Benefícios", spec: "SPE-05" },
+  { href: "/admin/employees", label: "Funcionários", spec: "SPE-02" },
+  { href: "/benefits", label: "Benefícios", spec: "SPE-06" },
 ];

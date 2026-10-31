@@ -100,5 +100,5 @@ export function redirectToLoginIfSessionEnded(error: unknown): boolean {
     return false;
   }
   // redirect() lança a exceção de navegação do Next (nunca retorna aqui)
-  redirect("/login?reason=sessao-expirada");
+  redirect("/login?reason=session-expired");
 }
