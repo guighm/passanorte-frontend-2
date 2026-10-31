@@ -6,7 +6,7 @@
 // Princípio II (FR-013/FR-014): o papel aqui governa SOMENTE navegação;
 // a autorização real é sempre decisão do backend em cada chamada.
 
-import type { PanelSession, Role } from "@/features/auth/types";
+import type { PanelSession, Role } from "@/features/auth/types1";
 
 /** Padrões de rota do painel (ordem de especificidade não importa: 1:1). */
 export type RoutePattern = "/" | "/admin/*" | "/benefits" | "/login";

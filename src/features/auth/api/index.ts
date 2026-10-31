@@ -3,7 +3,7 @@
 // (enquanto o Swagger real não existe; ver research.md D6).
 // Nenhum outro módulo do painel importa fetch para a FastAPI.
 
-import type { LoginResponse, Operator, Role } from "@/features/auth/types";
+import type { LoginResponse, Operator, Role } from "@/features/auth/types1";
 import {
   ApiUnavailableError,
   AuthInvalidCredentialsError,

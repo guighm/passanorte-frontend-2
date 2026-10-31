@@ -5,8 +5,8 @@
 
 import { cookies } from "next/headers";
 import { io } from "next/cache";
-import type { PanelSession, SessionState } from "@/features/auth/types";
-import type { LoginResponse } from "@/features/auth/types";
+import type { PanelSession, SessionState } from "@/features/auth/types1";
+import type { LoginResponse } from "@/features/auth/types1";
 import {
   REFRESH_COOKIE,
   REFRESH_COOKIE_MAX_AGE_SECONDS,
