@@ -5,7 +5,7 @@
 **Prerequisites**: plan.md (required, REVISÃO 2), spec.md, research.md
 (D10/D11), data-model.md, contracts/employees-api.md, quickstart.md (REVISÃO 2)
 
-**Contexto da rodada**: a rodada 1 (27/27... 25/27 tasks) foi implementada
+**Contexto da rodada**: a rodada 1 (25/27 tasks) foi implementada
 com Server Functions + `revalidatePath` (research D2) e está CONCLUÍDA —
 exceto T005 (probe, aguarda credenciais) e T026 (quickstart). Esta rodada
 aplica a REVISÃO 2 (research D10/D11): camada de dados **client-side com

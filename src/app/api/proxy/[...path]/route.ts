@@ -10,11 +10,18 @@ import { ApiUnavailableError, ContractViolationError } from "@/features/auth/api
 
 type Context = { params: Promise<{ path: string[] }> };
 
-function stripHopHeaders(headers: Headers): Headers {
-  const forwarded = new Headers();
+// FIX (SPE-02, bug reportado): o retorno anterior era uma instância de
+// `Headers`, e o uso `{ ...stripHopHeaders(...) }` no forward spreadea
+// TODOS os cabeçalhos fora (spread de Headers ⇒ {}) — o upstream recebia
+// POST sem `Content-Type` e a validação do FastAPI falhava com
+// "Input should be a valid dictionary or object to extract fields from".
+// Devolvemos um objeto simples construído por iteração (Princípio II —
+// o túnel segue apenas TRANSPORTANDO headers úteis, stripando hop-bys).
+function stripHopHeaders(headers: Headers): Record<string, string> {
+  const forwarded: Record<string, string> = {};
   headers.forEach((value, key) => {
     if (["host", "cookie", "authorization", "content-length", "connection"].includes(key.toLowerCase())) return;
-    forwarded.set(key, value);
+    forwarded[key] = value;
   });
   return forwarded;
 }
