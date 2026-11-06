@@ -56,6 +56,15 @@
   de mapa. Nenhum centro é fixado no código (RNF06): o mapa "aprende" a
   região a partir dos dados da API; a coordenada exata é sempre definida
   pelo administrador (marcador ou digitação).
+- Q: O Google exige billing habilitada (pré-pago de R$200 na billing
+  brasileira) para carregar o mapa — como seguir, dado o RNF15 (caráter
+  acadêmico, sem orçamento)? → A: **Manter o fallback manual agora
+  (custo zero)**: o mapa permanece integrado (com estado de erro distinto
+  e acionável quando billing/auth falham) e a feature funciona 100% com
+  digitação manual de coordenadas (FR-009 dá os dois caminhos como
+  equivalentes). Não há troca para OSM nesta fase (Constraint 3 exige
+  emenda formal). A DECISÃO DEFINITIVA do mapa (pagar o Google vs emenda
+  para OSM) fica para ANTES da SPE-07 — o heatmap (RF06) depende dela.
 
 ## User Scenarios & Testing *(mandatory)*
 

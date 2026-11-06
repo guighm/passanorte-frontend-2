@@ -59,7 +59,11 @@ condicionado à existência da chave (`useApiIsLoaded`/lazy).
 
 **Constraints**: nenhuma `fetch` fora de `src/shared/lib` (`bff.ts` client,
 Constraint 5); chave do Google Maps APENAS em `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`
-— nunca em código (Princípio III); sem centro de mapa/categoria/cidade
+— nunca em código (Princípio III); **decisão do owner (2026-11-06): sem
+billing do Google nesta fase** — o mapa fica com estado de erro distinto e
+o formulário funciona com coordenadas manuais (fallback já implementado);
+a escolha definitiva do mecanismo de mapa (Google pago vs emenda para OSM)
+fica para ANTES da SPE-07 (heatmap RF06); sem centro de mapa/categoria/cidade
 hard-coded (FR-002, RNF06); enum `SpotStatus` fechado — valor desconhecido
 ⇒ violação explícita (nunca badge inventado); resposta divergente do
 contrato ⇒ `ContractViolationError`; remoção permanente SEMPRE com
