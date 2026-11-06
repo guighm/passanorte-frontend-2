@@ -69,8 +69,11 @@ Para **cada spec da lista**, na ordem de implementação da Seção 3, executar 
 | 5 | SPE-05 | Rotas Turísticas e Estoque de Brindes | Média | SPE-03 |
 | 6 | SPE-06 | Concessão de Brindes (Funcionário) | Média | SPE-01, SPE-05 |
 | 7 | SPE-07 | Dashboard e Insights | Alta | SPE-03 (dados de visita via API) |
+| 8 | SPE-08 | Tipografia do Projeto | Baixa | SPE-01 (pode rodar em paralelo a SPE-02/03) |
 
 > SPE-02, SPE-03 (e derivadas) podem ser construídas **em paralelo** depois de SPE-01.
+> SPE-08 (tipografia) também é paralela a SPE-02/03: é refinamento de fundação de UI
+> aplicado às telas existentes e consumido pelas specs seguintes.
 
 ---
 
@@ -212,6 +215,27 @@ Para **cada spec da lista**, na ordem de implementação da Seção 3, executar 
 
 ```text
 /speckit.specify Dashboard e insights do painel administrativo PassaNorte, cobrindo RF06, RF07, RF08, RF09 e RF10 de docs/SYSTEM_REQUIREMENTS.md (acesso exclusivo do administrador). Seções: (1) mapa de calor da cidade de Manaus com intensidade de visitas por região/ponto turístico, reusando a base de mapas (Google Maps ou OSM) estabelecida na SPE-03; (2) contador total de acessos ao aplicativo Passaporte (app do turista, dados vindos do backend) com períodos configuráveis pelo usuário; (3) ranking de pontos turísticos mais visitados com segmentação por dia, mês e ano; (4) distribuição proporcional de visitantes por país de origem; (5) distribuição proporcional por interesses cadastrados no perfil dos turistas. Implementar em React 19 com biblioteca de gráficos adequada, seletor global de período quando aplicável, e estados de carregamento, vazio e erro em cada card. Consumir os endpoints analíticos conforme o contrato OpenAPI da API FastAPI (aggregations/dashboard). Deixar registrado na spec que os dados brutos (visitações, acessos, perfis) são coletados pelo backend a partir do uso do app do turista.
+```
+
+---
+
+### SPE-08 — Tipografia do Projeto
+
+**Requisitos:** nenhum RF do panel (fundação de UI) · **Cross (RNF):** RNF19 (acessibilidade mínima, Constraint 5 da constituição) · **Módulo:** Fundação de UI (`src/shared`, `globals.css`)
+
+**Objetivo:** definir e unificar a tipografia do painel em uma única fonte de verdade (tokens), eliminando tamanhos/pesos ad hoc espalhados pelos componentes — aplicada às telas já existentes (login, shell do painel, placeholders) e consumida por SPE-02..07.
+
+**Inclui:**
+- Escolha da família tipográfica (uma única decisão em plan/research): via `next/font` — fonte gratuita/open source (RNF15) ou stack de sistema, com fallback declarado; **nada de import de fonte via CDN** (Princípio III).
+- Escala tipográfica canônica em tokens Tailwind 4 (`@theme`): variantes para display/h1–h6, corpo, legenda e código, com tamanho, altura de linha, peso, tracking e correção de cor por token.
+- Conversão dos componentes existentes (`Button`, `PanelHeader`, `PanelSidebar`, `LoginForm`, páginas de placeholder e estados `LoadingState`/`EmptyState`/`ErrorState`) para consumir os tokens — nenhum `text-*`/`font-*` ad hoc fora de `src/shared`.
+- Regras de uso documentadas (qual variante em qual contexto: títulos de página, rótulos de navegação, texto de formulário, feedback de estado) e números tabulares onde fizer sentido (tabelas/contadores para SPE-07).
+- Acessibilidade dentro do alcance: legibilidade mínima (tamanhos de corpo não inferiores ao padrão acessível), hierarquia legível por teclado e leitores de tela (SR-only já usado como padrão).
+
+**Prompt:**
+
+```text
+/speckit.specify Tipografia do projeto do painel administrativo PassaNorte (fundação de UI, paralela a SPE-02/03, dependente da SPE-01). Definir a família tipográfica do painel em uma única decisão documentada: via next/font (fonte gratuita/open source conforme RNF15, ou stack de sistema com fallback declarado) — nenhum import de fonte por CDN (Princípio III da constituição). Estabelecer a escala tipográfica canônica como tokens no @theme do Tailwind 4 (display, h1–h6, corpo, legenda e código, com tamanho, altura de linha, peso, tracking e cor associados), refatorando os componentes e telas existentes (Button, states, PanelHeader, PanelSidebar, LoginForm, shell e placeholders) para consumir somente esses tokens — sem tamanhos ad hoc fora de src/shared. Registrar as regras de uso por contexto (títulos, navegação, formulários, feedback) e os requisitos de acessibilidade (legibilidade mínimo, hierarquia para leitores de tela); especificar números tabulares para contadores/tabelas usados pelo dashboard (SPE-07). A spec é agnóstica de tecnologia para a escolha de fonte, mas fixa os tokens como contrato de UI para as features seguintes.
 ```
 
 ---
