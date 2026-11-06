@@ -175,6 +175,14 @@ emenda 2.0.0, ver **D12** abaixo; mantida como histórico)
 - **Princípios preservados**: RNF15 (grátis), RNF18 (OSM previsto),
   Princípio III (nada de chave; ícones via bundle, attribution legal
   mantida), Constraint 3 (uma única integração, reuso na SPE-07).
+- **Ajuste de implementação (bug revelado em dev)**: **Leaflet NÃO é
+  avaliável em Node** — `import('leaflet')` lança
+  `window is not defined` na avaliação do módulo; o import estático na
+  cadeia do componente client quebrava o SSR do segment inteiro
+  (`Could not validate \`instant\``). Correção: módulo React do Leaflet
+  isolado em `SpotLeafletMap.tsx` e carregado via
+  `next/dynamic({ ssr: false })` a partir de `SpotMapPicker` — o servidor
+  nunca importa leaflet; skeleton até o chunk chegar (Princípio V).
 
 **Resumo de decisões — atualizado:**
 
