@@ -9,12 +9,13 @@
 Implementar a fundação do Painel Administrativo PassaNorte (RF02, RF03, RNF09):
 tela de login autenticando contra a API FastAPI com sessão JWT gerenciada
 server-side em cookie httpOnly (clarificação de 2026-10-30), guardas de rota
-por papel (administrador = acesso total; funcionário = apenas `/beneficios`),
+por papel (administrador = acesso total; funcionário = apenas `/benefits`),
 shell de layout reutilizável, cliente HTTP compartilhado com renovação
-transparente de sessão (401/refresh) e página inicial com placeholders das
-seções do painel. O backend ainda não está acessível: o contrato esperado da
-spec é o baseline e mocks temporários são permitidos apenas quando marcados
-(Princípio I).
+transparente de sessão (401/refresh, com **rotação** do token de renovação —
+confirmada em login real, 2026-11-06) e página inicial com placeholders das
+seções do painel. **Contrato confirmado (2026-11-06):** a API "Passanorte
+API" está ativa em `http://localhost:8010` — mocks temporários foram
+removidos (T046) e o compare de contrato está encerrado (governança 5).
 
 ## Technical Context
 
@@ -49,11 +50,13 @@ protegido (guarda no nível de proxy); login concluído em < 5s em rede local
 **Constraints**: token de sessão nunca acessível ao JavaScript do navegador
 (Princípio III, FR-005); nenhuma API do Next.js deprecated (Constraint 2 —
 em Next 16 `middleware.ts` é deprecated, usar `proxy.ts`, ver research.md);
-mocks temporários obrigatoriamente marcados (Princípio I).
+`API_BASE_URL` obrigatória — modo mock removido (T046) e divergência de
+contrato é sempre erro explícito (Princípio I).
 
-**Scale/Scope**: 2 papéis exatos (administrador, funcionário); ~8 rotas
-(`/login`, `/`, `/beneficios`, `/admin/*` placeholders); 4 endpoints de
-autenticação no contrato esperado.
+**Scale/Scope**: 2 papéis exatos (administrador, funcionário — valores da
+API `"admin"`/`"employee"`); ~8 rotas (`/login`, `/`, `/benefits`,
+`/admin/*` placeholders); 4 endpoints de autenticação confirmados
+(`/api/v1/auth/{login,refresh,logout,me}`).
 
 ## Constitution Check
 
@@ -61,7 +64,7 @@ autenticação no contrato esperado.
 
 | Princípio | Avaliação no design | Status |
 | --- | --- | --- |
-| I. API como Contrato Único | Contrato esperado registrado em `contracts/auth-api.md`; mocks atrás de uma única camada (`src/features/auth/api`), marcados `MOCK (temporary)`; compare com Swagger real é task obrigatória quando o backend subir | ✅ Pass |
+| I. API como Contrato Único | Contrato confirmado em `contracts/auth-api.md` (re-compare 2026-11-06, API real em `localhost:8010`); mocks temporários removidos (T046); divergência de payload é erro explícito (`ContractViolationError`) | ✅ Pass |
 | II. Backend É a Autoridade | Painel não valida credenciais nem decide autorização: papel vem da resposta da API (`/auth/login`, `/auth/me`); guardas de `proxy.ts`/layout só previnem navegação; FR-013/FR-014 mapeados para design | ✅ Pass |
 | III. Sessão Segura, Dados Mínimos | Tokens trocados por cookie httpOnly em Route Handler; zero exposição a JS do cliente; chaves externas via env vars (`API_BASE_URL`); sem novas dependências pagas | ✅ Pass |
 | IV. Feature-Based e Portabilidade | Código em `src/features/auth` + `src/shared`; nada da cidade fixado — placeholders consomem apenas sessão e dados da API | ✅ Pass |
@@ -98,13 +101,13 @@ src/
 ├── proxy.ts                     # Guardas de rota por sessão/papel (convenção proxy.ts de Next 16)
 ├── app/
 │   ├── layout.tsx               # Root layout existente
-│   ├── (painel)/                # Route group: shell + áreas protegidas
+│   ├── (panel)/                 # Route group: shell + áreas protegidas
 │   │   ├── layout.tsx           # Shell de layout com navegação condicional ao papel (T018, RBAC de superfície)
 │   │   ├── page.tsx             # / (home admin com placeholders)
-│   │   ├── beneficios/
-│   │   │   └── page.tsx         # /beneficios — área do funcionário (RF03)
+│   │   ├── benefits/
+│   │   │   └── page.tsx         # /benefits — área do funcionário (RF03)
 │   │   └── admin/
-│   │       └── {funcionarios,pontos,eventos,rotas,dashboard}/page.tsx  # Placeholders admin* (SPE-02..07)
+│   │       └── {dashboard,attractions,events,tours,employees}/page.tsx  # Placeholders admin (SPE-02..07)
 │   ├── login/
 │   │   └── page.tsx             # Tela de login (RF02) — rota pública única
 │   └── api/
@@ -112,12 +115,14 @@ src/
 │           └── [...path]/route.ts  # BFF: repassa chamadas à FastAPI anexando token da sessão
 ├── features/
 │   └── auth/
-│       ├── api/                 # Única camada que fala com a FastAPI (mock quando API_BASE_URL ausente)
-│       ├── session/             # Sessão server-side (cookie httpOnly, refresh, logout)
-│       ├── components/          # LoginForm etc.
-│       └── guards/              # Lógica de papel consumida por proxy.ts e layout
+│       ├── api/                 # Única camada que fala com a FastAPI (contrato confirmado, T046: sem mocks)
+│       ├── session/             # Sessão server-side (cookie httpOnly, refresh com rotação, logout)
+│       ├── actions/             # Server Actions (login com `?next=` clampado, logout)
+│       ├── components/          # LoginForm, PanelShell, PanelHeader etc.
+│       ├── guards/              # Lógica de papel consumida por proxy.ts e layout
+│       └── types/               # SessionResponse, PanelSession, Role (admin|employee)
 └── shared/
-    ├── components/              # Button, DataTable (existentes) + novos transversais
+    ├── components/              # Button, DataTable, estados (existentes) + novos transversais
     └── lib/
         └── http.ts              # Cliente HTTP compartilhado (FR-015): anexo de sessão, 401/refresh, divergência de contrato
 ```

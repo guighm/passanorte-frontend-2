@@ -5,6 +5,9 @@
 //
 // Princípio II (FR-013/FR-014): o papel aqui governa SOMENTE navegação;
 // a autorização real é sempre decisão do backend em cada chamada.
+//
+// T040 (2026-11-06): papéis canônicos confirmados por login real —
+// "admin" | "employee" (contracts/auth-api.md re-confirmado).
 
 import type { PanelSession, Role } from "@/features/auth/types";
 
@@ -12,14 +15,19 @@ import type { PanelSession, Role } from "@/features/auth/types";
 export type RoutePattern = "/" | "/admin/*" | "/benefits" | "/login";
 
 const ROLE_RULES: { pattern: RoutePattern; roles: readonly (Role | "any")[] }[] = [
-  { pattern: "/", roles: ["administrador"] },
-  { pattern: "/admin/*", roles: ["administrador"] },
-  { pattern: "/benefits", roles: ["administrador", "funcionario"] },
+  { pattern: "/", roles: ["admin"] },
+  { pattern: "/admin/*", roles: ["admin"] },
+  { pattern: "/benefits", roles: ["admin", "employee"] },
 ];
 
 /** Páginas iniciais por papel (redirecionamento pós-login, FR-004). */
 export function homePathForRole(role: Role): string {
-  return role === "funcionario" ? "/benefits" : "/";
+  return role === "employee" ? "/benefits" : "/";
+}
+
+/** Rótulo de exibição da UI (canônico no painel, português — convenção). */
+export function roleLabel(role: Role): string {
+  return role === "employee" ? "Funcionário" : "Administrador";
 }
 
 function matchesPattern(pathname: string, pattern: RoutePattern): boolean {
@@ -54,9 +62,13 @@ export function readSessionCookie(sessionCookie?: string, refreshCookie?: string
       typeof session?.accessToken !== "string" ||
       typeof session?.refreshToken !== "string" ||
       typeof session?.operator?.role !== "string" ||
-      typeof session?.operator?.name !== "string" ||
-      typeof session?.operator?.id !== "string"
+      typeof session?.operator?.username !== "string"
     ) {
+      return null;
+    }
+    // T040: papel fora do enum confirmado é gramática inválida do cookie
+    // (não acesso por omissão — Princípio II).
+    if (session.operator.role !== "admin" && session.operator.role !== "employee") {
       return null;
     }
     const expired = session.expiresAt <= Date.now();

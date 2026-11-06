@@ -4,7 +4,7 @@
 // Usado pelas próximas specs para interações client-side (SPE-02..07).
 
 import { NextResponse, type NextRequest } from "next/server";
-import { getSession } from "@/features/auth/session";
+import { getSession, outgoingSessionCookies } from "@/features/auth/session";
 import { refreshSession } from "@/features/auth/session/refresh";
 import { ApiUnavailableError, ContractViolationError } from "@/features/auth/api/errors";
 
@@ -38,8 +38,9 @@ async function forward(
 /** Túnel com renovação única em 401 + replay (mesma política de FR-015/US3). */
 export async function handler(request: NextRequest, context: Context): Promise<NextResponse> {
   if (!process.env.API_BASE_URL) {
+    // T046: modo mock removido — a API é o único caminho de dados (Princípio I).
     return NextResponse.json(
-      { detail: "API_BASE_URL não configurada — endpoint de negócio indisponível no modo mock" },
+      { detail: "API_BASE_URL não configurada — serviço indisponível" },
       { status: 503 },
     );
   }
@@ -64,22 +65,33 @@ export async function handler(request: NextRequest, context: Context): Promise<N
     return upstreamError(error);
   }
 
+  let renewedAfter401: Awaited<ReturnType<typeof refreshSession>> = null; // T043
   if (response.status === 401) {
     try {
       const renewed = await refreshSession();
       if (!renewed) {
         return NextResponse.json({ detail: "Sessão encerrada" }, { status: 401 }); // FR-007
       }
+      renewedAfter401 = renewed;
       response = await forward(request, suffix, search, renewed.accessToken, body);
     } catch (error) {
       return upstreamError(error);
     }
   }
 
-  return new NextResponse(response.body, {
+  const result = new NextResponse(response.body, {
     status: response.status,
     headers: { "Content-Type": response.headers.get("Content-Type") ?? "application/json" },
   });
+  // T043: persistir o par renovado (rotação single-use) na resposta —
+  // `cookies().set()` dentro de refreshSession não é mesclado em
+  // NextResponse construído manualmente.
+  if (renewedAfter401) {
+    for (const cookie of outgoingSessionCookies(renewedAfter401)) {
+      result.cookies.set(cookie.name, cookie.value, cookie.options);
+    }
+  }
+  return result;
 }
 
 function upstreamError(error: unknown): NextResponse {

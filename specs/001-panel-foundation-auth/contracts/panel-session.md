@@ -1,6 +1,8 @@
 # Contract: Superfície interna do painel — sessão e guardas
 
-**Feature**: 001-panel-foundation-auth · **Date**: 2026-10-30
+**Feature**: 001-panel-foundation-auth · **Date**: 2026-11-06
+*(rotas/dicção atualizadas ao contrato confirmado — `/api/v1/auth/*`,
+papéis `admin`/`employee`, árvore de rotas em inglês)*
 
 Interfaces que a fundação expõe para as features seguintes (SPE-02..07
 consomem isto; nenhuma delas toca cookies, JWT ou a FastAPI direto).
@@ -38,17 +40,21 @@ erro próprio (Princípio I) — nunca silenciosamente reinterpretada.
 
 ```ts
 roleCanAccess(role: Role, pathPattern: RoutePattern): boolean
-// mapa de rotas:
-//   "/"           → administrador
-//   "/admin/*"    → administrador
-//   "/beneficios" → administrador | funcionário
-//   "/login"      → pública (com sessão ativa → redireciona por papel)
+// mapa de rotas (FR-011 — clarificação 2026-11-06: guarda lembra o destino
+// pretendido via `?next=` e o login devolve a ele, clampado ao papel):
+//   "/"           → admin
+//   "/admin/*"    → admin
+//   "/benefits"   → admin | employee
+//   "/login"      → pública; com sessão ativa → área inicial do papel;
+//                   com destino lembrado (`?next=`) → devolve clampado ao papel
 ```
 
 `src/proxy.ts` consome apenas presença de sessão + papel (cookie server-side)
-para redirecionar sem render: sem sessão ⇒ `/login`; papel insuficiente ⇒
-rota permitida do papel. Layouts server-side revalidam papel via sessão e,
-quando o contrato permitir, `/auth/me` (segunda camada de papel — research D1).
+para redirecionar sem render: sem sessão ⇒ `/login?next=<destino>`; papel
+insuficiente ⇒ rota permitida do papel. Layouts server-side revalidam papel
+via sessão; `GET /api/v1/auth/me` está confirmado como camada de revalidação
+de identidade (T029 — disponível na API de auth; recarga de página restaura
+username+role do cookie server-side).
 
 ## Cliente HTTP compartilhado (`src/shared/lib/http`)
 

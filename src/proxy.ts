@@ -33,8 +33,12 @@ export function proxy(request: NextRequest): NextResponse {
     request.cookies.get(REFRESH_COOKIE)?.value,
   );
   if (!state) {
-    // sem sessão navegável: rota protegida /login com limpeza de cookies residuais
-    const response = NextResponse.redirect(new URL("/login", request.url));
+    // sem sessão navegável: rota protegida /login com limpeza de cookies
+    // residuais — o destino pretendido é lembrado via `?next=` (FR-011/T042
+    // — clarificação 2026-11-06); o login devolve ao destino clampado ao papel.
+    const response = NextResponse.redirect(
+      new URL(urlWithNext("/login", request.nextUrl, pathname + request.nextUrl.search)),
+    );
     response.cookies.delete(SESSION_COOKIE);
     response.cookies.delete(REFRESH_COOKIE);
     return response;
@@ -42,10 +46,21 @@ export function proxy(request: NextRequest): NextResponse {
 
   const role = state.session.operator.role;
   if (!roleCanAccess(pathname, role)) {
-    // rota bloqueada para o papel ⇒ redireciona à área permitida, sem render (FR-010)
-    return NextResponse.redirect(new URL(homePathForRole(role), request.url));
+    // rota bloqueada para o papel ⇒ redireciona à área permitida, sem render
+    // (FR-010). O destino tentado permanece em `next`: re-login com outro
+    // papel é clampado ao papel (FR-011/T042).
+    return NextResponse.redirect(
+      new URL(urlWithNext(homePathForRole(role), request.nextUrl, pathname)),
+    );
   }
   return NextResponse.next();
+}
+
+/** Redirect que preserva o destino pretendido em `?next=` (FR-011/T042). */
+function urlWithNext(base: string, from: URL, nextPath: string): string {
+  const to = new URL(base, from);
+  to.searchParams.set("next", nextPath);
+  return to.toString();
 }
 
 export const config = {

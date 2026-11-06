@@ -56,6 +56,10 @@ async function LoginPanel({
 
   const params = await searchParams;
   const sessionEnded = params.reason === "session-expired";
+  // FR-011 (T042): destino lembrado pelo guarda — só valor interno;
+  // sanitização final acontece no Server Action (clamp ao papel).
+  const rawNext = Array.isArray(params.next) ? params.next[0] : params.next;
+  const next = typeof rawNext === "string" && rawNext.startsWith("/") && !rawNext.startsWith("//") ? rawNext : undefined;
 
   return (
     <>
@@ -67,7 +71,7 @@ async function LoginPanel({
           Sua sessão foi encerrada. Acesse novamente para continuar.
         </p>
       ) : null}
-      <LoginForm />
+      <LoginForm next={next} />
     </>
   );
 }

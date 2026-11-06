@@ -9,8 +9,8 @@
 **Input**: User description: "Fundações e autenticação do painel administrativo PassaNorte. Deve cobrir RF02 e RF03 de docs/SYSTEM_REQUIREMENTS.md: (1) tela de login para administradores e funcionários, autenticando contra a API FastAPI com sessão JWT (expiração, refresh, logout); o frontend não cria nem valida credenciais. (2) RBAC no frontend: administrador tem acesso completo; funcionário acessa apenas a concessão de benefícios — guardas de rota por papel, navegação condicional e redirecionamento pós-login por papel; autorização final é do backend. (3) Fundações: shell de layout, cliente HTTP compartilhado com tratamento de 401/refresh e página inicial com placeholders. A spec define o contrato esperado dos endpoints de autenticação a partir do Swagger."
 
 > **Nota de escopo (constituição):** conforme Princípio I da
-> `../.specify/memory/constitution.md`, a seção "Contrato Esperado da API"
-> abaixo é conteúdo obrigatório de spec do projeto PassaNorte e substitui a
+> `../.specify/memory/constitution.md`, a seção "Contrato da API" abaixo é
+> conteúdo obrigatório de spec do projeto PassaNorte e substitui a
 > diretriz genérica de ausência de detalhes técnicos — é um contrato de
 > negócio consumido pelo backend, não uma decisão de implementação do
 > frontend. Demais requisitos e critérios de sucesso permanecem
@@ -22,6 +22,17 @@
 
 - Q: Onde o painel deve guardar o token da sessão do operador? → A: Option A — cookie httpOnly gravado por handler de servidor; o JavaScript do navegador nunca vê o token (Princípio III, RNF08).
 - Q: A API FastAPI com o Swagger já está rodando e acessível neste momento para validar o contrato da spec? → A: Option B — não; o contrato esperado desta spec é o baseline, com mocks temporários permitidos apenas enquanto marcados como tal (Princípio I).
+
+### Session 2026-11-01
+
+- Q: A API FastAPI já está rodando e acessível para o compare de contrato previsto na governança da constituição? → A: **Sim** — API ativa em `http://localhost:8000` (OpenAPI 3.1, `GET /openapi.json`). Esta resposta **supersedes** a opção B da sessão de 2026-10-30. O compare campo a campo foi executado e as divergências estão registradas em "Contrato da API" e aplicadas a `contracts/auth-api.md` (governança 5 da constituição). Pendências restantes: valores exatos de `role` (string livre no OpenAPI) e credenciais de seed reais — confirmar com um login de operador real antes de encerrar a SPE-01.
+
+### Session 2026-11-06
+
+- Q: Como resolver as pendências de `role` (valores exatos) e credenciais de seed, dado que a API já roda em `http://localhost:8000`? → A: Option A — realizar login real contra a API em execução: os valores retornados de `role` são registrados nesta spec e em `contracts/auth-api.md`; credenciais NUNCA ficam registradas em artefatos (só são usadas localmente no teste). **Resultado do teste (2026-11-06):** (1) o serviço em `http://localhost:8000` é o **"ADA Backend"** — sistema alheio ao PassaNorte; (2) a API real do Passanorte roda em `http://localhost:8010` (`GET /openapi.json`, título "Passanorte API", HTTPBearer): login real executado com credenciais de seed fornecidas pelo owner — **`role` = `"admin"` para administrador e `"employee"` para funcionário**, `expiresIn` = `3600` s (1 h), `/auth/me` devolve `{username, role}`, refresh devolve a mesma `SessionResponse` e **ROTACIONA** o token de renovação (string opaca, não-JWT, de uso único); 401 de credenciais usa o `ApiError` registrado. Pendência de `role` **RESOLVIDA**; credenciais permanecem fora de artefatos.
+- Q: Quando um operador sem sessão (ou sem papel permitido) é bloqueado por um guarda de rota e enviado ao login, o painel deve devolvê-lo à rota que pretendia após o login, ou sempre levá-lo à área inicial do papel? → A: Option A — o guarda lembra o destino pretendido e o login devolve a ele, clampado ao papel: funcionário que tentou uma rota administrativa cai na sua área permitida, nunca na rota administrativa.
+- Q: Um operador com sessão ativa que abre a página de login deve ser redirecionado à sua área inicial do papel, ou pode ver o formulário de novo e refazer o login? → A: Option A — com sessão ativa, `/login` redireciona imediatamente à área inicial do papel, sem mostrar o formulário; troca de operador exige logout explícito primeiro.
+- Q: Ao acionar o botão de logout no cabeçalho, o painel deve exigir confirmação explícita antes de encerrar a sessão, ou encerra imediatamente no primeiro clique? → A: Option A — logout em um clique, sem confirmação: é reversível com um login novo e a re-autenticação é barata; confirmação extra adicionaria atrito diário sem proteção real (Princípio V lista ações destrutivas de dados, e logout não é uma delas).
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -113,10 +124,10 @@ próxima navegação/ação.
    recusado pelo backend), **When** qualquer chamada de dados falha por
    sessão, **Then** o operador é levado ao login com aviso de sessão
    encerrada e nenhuma chamada de dados entra em loop infinito de tentativas.
-3. **Given** operador autenticado, **When** aciona o logout no cabeçalho,
-   **Then** a sessão é encerrada junto ao backend (quando o contrato o
-   previr) e o operador volta ao login; voltar atrás no histórico não
-   recarrega dados protegidos da sessão anterior.
+3. **Given** operador autenticado, **When** aciona o logout no cabeçalho
+   (um clique, sem confirmação), **Then** a sessão é encerrada junto ao
+   backend (confirmado no contrato) e o operador volta ao login; voltar
+   atrás no histórico não recarrega dados protegidos da sessão anterior.
 4. **Given** múltiplas requisições simultâneas encontram sessão expirada,
    **When** todas precisam de renovação, **Then** apenas uma renovação é
    feita e todas as chamadas continuam com o mesmo novo token.
@@ -183,9 +194,11 @@ placeholders que consultam dados.
 
 - **FR-001**: o painel MUST apresentar uma tela de login com campos de
   usuário e senha e ação de envio, a partir da qual todas as rotas protegidas
-  ficam inacessíveis.
+  ficam inacessíveis. Com sessão ativa, a página de login MUST redirecionar
+  imediatamente à área inicial do papel (sem exibir o formulário): troca de
+  operador exige logout explícito primeiro.
 - **FR-002**: o painel MUST enviar as credenciais exclusivamente à API de
-  autenticação (contrato em "Contrato Esperado da API") e NÃO DEVE criar,
+  autenticação (contrato em "Contrato da API") e NÃO DEVE criar,
   validar, comparar ou armazenar credenciais localmente (RF01 é executado no
   backend e está fora de escopo do painel).
 - **FR-003**: o painel MUST exibir os três estados de interação com a API na
@@ -204,12 +217,15 @@ placeholders que consultam dados.
 - **FR-006**: o painel MUST renovar a sessão automaticamente pelo endpoint de
   renovação quando o token vigente expirar, de forma transparente ao
   operador, com o comportamento de concorrência definido em
-  "Contrato Esperado da API" (uma única troca por ciclo de expiração).
+  "Contrato da API" (uma única troca por ciclo de expiração).
 - **FR-007**: quando a renovação falhar (token de renovação inválido, expirado
   ou recusado), o painel MUST encerrar a sessão local e direcionar ao login
   com aviso de sessão encerrada; NÃO DEVE retratar renovação indefinidamente.
-- **FR-008**: o painel MUST oferecer logout explícito, que encerra a sessão
-  local e, se previsto no contrato, a sessão no backend.
+- **FR-008**: o painel MUST oferecer logout explícito em um clique, sem
+  diálogo de confirmação (ação reversível com novo login; Princípio V
+  aplica-se a ações destrutivas de dados, não ao logout), que encerra a
+  sessão local e a sessão no backend (contrato: `POST /api/v1/auth/logout`,
+  204).
 - **FR-009**: qualquer chamada à API com resposta de sessão expirada (401)
   NÃO DEVE ser apresentada ao operador como erro da ação: DEVE disparar o
   fluxo de renovação (FR-006/FR-007).
@@ -220,7 +236,10 @@ placeholders que consultam dados.
   administrativas quando o operador autenticado for funcionário,
   redirecionando-o à área permitida, sem renderizar a página bloqueada.
 - **FR-011**: o painel MUST bloquear acesso a qualquer rota protegida para
-  operador sem sessão, levando-o ao login.
+  operador sem sessão, levando-o ao login. O guarda lembra o destino
+  pretendido e, após login bem-sucedido, devolve o operador a ele, clampado
+  ao papel: funcionário que tentou uma rota administrativa é devolvido à
+  sua área permitida, nunca à rota administrativa tentada.
 - **FR-012**: o painel MUST condicionar os itens de navegação da moldura ao
   papel do operador: administrador vê todos os itens; funcionário vê apenas o
   item de concessão de benefícios.
@@ -269,7 +288,10 @@ placeholders que consultam dados.
   uso; sua única finalidade é autenticar chamadas à API.
 - **Papel**: valor de autorização superficial administrado no backend
   ("administrador" com acesso total; "funcionário" restrito à concessão de
-  benefícios). No painel, controla apenas navegação e guardas de rota.
+  benefícios). Valores na API (confirmados por login real, 2026-11-06):
+  `"admin"` e `"employee"` — mapeados explicitamente e um a um no painel;
+  qualquer outro valor ⇒ falha de sessão. No painel, controla apenas
+  navegação e guardas de rota.
 
 ## Success Criteria *(mandatory)*
 
@@ -299,16 +321,16 @@ placeholders que consultam dados.
 - A API FastAPI aceita autenticação por cabeçalho de autorização token a
   token (padrão JWT bearer); o painel repõe o token da sessão httpOnly ao
   repassar chamadas server-side.
-- O backend FastAPI ainda não está acessível (confirmado em 2026-10-30):
-  enquanto o Swagger real não existir, a autenticação opera com mocks
-  temporários, cada um marcado como tal nos artefatos Spec Kit e removido
-  assim que o endpoint real for confirmado (Princípio I). A conferência do
-  contrato contra o Swagger real NÃO PODE ficar indefinidamente pendente —
-  é pré-condição para dar a SPE-01 por concluída.
-- O backend expõe endpoints de autenticação compatíveis com o contrato
-  registrado em "Contrato Esperado da API"; quando o Swagger real estiver
-  disponível, o contrato desta spec é conferido contra ele e ajustado
-  ANTES do `/speckit-plan` finalizar (Princípio I).
+- **Supersedes premissas de 2026-10-30 e 2026-11-01:** a API real do
+  Passanorte ("Passanorte API", HTTPBearer) está acessível em
+  `http://localhost:8010` — NÃO em `http://localhost:8000`, onde atende o
+  "ADA Backend" (sistema alheio) na data de 2026-11-06. O compare campo a
+  campo re-executado nesta data confirmou o contrato registrado; login real
+  (owner) resolveu `role` e as credenciais de seed. Os endpoints reais
+  existem — portanto os mocks temporários (`src/features/auth/api/mock.ts`,
+  marcados MOCK (temporary), ativos apenas quando `API_BASE_URL` não está
+  configurada) DEVEM ser removidos antes do encerramento da SPE-01 (Princípio
+  I): nenhuma task nova pode depender deles.
 - O papel retornado pela API é confiável para navegação (RBAC de superfície);
   a autorização definitiva do backend não depende dela.
 - Os dois papéis do painel são exatamente dois: "administrador" (acesso
@@ -322,54 +344,120 @@ placeholders que consultam dados.
 - Ferramentas para scanner de QR/código e mapa não são desta spec (SPE-06,
   SPE-03).
 
-## Contrato Esperado da API *(conteúdo obrigatório — Princípio I da constituição)*
+## Contrato da API *(re-confirmado contra o Swagger real em 2026-11-06 — Princípio I da constituição)*
 
-> Este contrato é o esperado a partir dos requisitos (RF02, RF03, RNF09) e
-> das convenções da API FastAPI/Swagger do projeto. **Baseline confirmado na
-> clarificação de 2026-10-30:** o backend ainda não está acessível — este
-> contrato é o baseline do projeto. Quando o Swagger real ficar disponível,
-> o compare de campo a campo DEVE ser registrado (divergências editam esta
-> spec ANTES das tasks correspondentes). Até lá, mocks temporários são
-> permitidos apenas enquanto marcados como tal nos artefatos (Princípio I).
+> Compare campo a campo re-executado em 2026-11-06 contra o OpenAPI real da
+> API "Passanorte API" ativa em `http://localhost:8010` (`GET /openapi.json`)
+> — supersedes o compare de 2026-11-01 atribuído a `localhost:8000`: o
+> serviço lá em execução é o "ADA Backend", sistema alheio ao PassaNorte.
+> Divergências do baseline estão listadas ao fim da seção; `contracts/auth-api.md`
+> foi atualizado em conjunto (governança 5 da constituição). As pendências
+> de 2026-11-01 foram **resolvidas** nesta sessão: valores exatos de `role`
+> confirmados por login real (`"admin"`, `"employee"`) — credenciais de seed
+> NÃO são registradas em artefatos.
 >
-> **Sessão local (decisão da clarificação 2026-10-30):** o par de tokens
-> devolvido pelo `/auth/login` NÃO é exposto ao JavaScript do navegador —
+> **Sessão local (decisão da clarificação 2026-10-30, mantida):** o par de
+> tokens devolvido pelo login NÃO é exposto ao JavaScript do navegador —
 > um handler do lado do servidor do painel o troca por um cookie httpOnly
 > local ao painel; as chamadas à API FastAPI anexam o token de autorização
-> a partir dessa sessão do lado do servidor. O `/auth/refresh` segue o
+> a partir dessa sessão do lado do servidor. O refresh segue o
 > mesmo caminho (renovação server-side); 401/renovação continuam sendo
 > disparados pelo cliente HTTP compartilhado (FR-006/FR-009/FR-015).
 
-**POST `/auth/login`** — autentica operador e devolve a sessão.
+**POST `/api/v1/auth/login`** — autentica operador e devolve a sessão.
 
-- Request: `{ "username": "<identificação do operador>", "password": "<senha>" }`
-- 200 Response: `{ "access_token": "<JWT>", "refresh_token": "<JWT>",
-  "token_type": "bearer", "expires_in": <segundos>, "user": { "id",
-  "username", "name", "role": "administrador" | "funcionário" } }`
-- 401: credenciais inválidas (`{ "detail": "..." }`)
+- Request: `{ "username": "<string, 1–100>", "password": "<string, 1–200>" }`
+  (ambos obrigatórios)
+- 200 Response: `{ "accessToken": "<JWT>", "refreshToken": "<string opaca, não-JWT>",
+  "tokenType": "bearer", "expiresIn": 3600, "role": <string> }` — `expiresIn`
+  real observado: **3600 s (1 h)**; o token de renovação é string opaca de
+  uso único (**rotacionado** em toda renovação: a resposta de refresh traz
+  um novo `refreshToken`)
+- 401: credenciais inválidas → payload unificado
+  `{ "errorCode": "authentication_failed", "message": "invalid credentials",
+  "details": [] }` (confirmado em login real — formato `ApiError` do backend,
+  NÃO o `{ "detail": }` do FastAPI)
+- 422: corpo inválido → `HTTPValidationError` padrão do FastAPI (exceção
+  documentada ao payload unificado de erro)
 - 503/5xx: serviço indisponível
-- O painel não deve assumir nome exato do campo de papel: será confirmado no
-  Swagger; divergências alteram esta spec antes do plan.
+- Papel/identidade: **não há objeto `user`** — `role` vem no nível raiz, e
+  `id`/`name` não existem na resposta. A identificação do operador na moldura
+  passa a ser `username` + `role` (via login ou `GET .../auth/me`).
+- Valores de `role` (confirmados por login real, 2026-11-06):
+  `"admin"` (administrador) e `"employee"` (funcionário). Qualquer outro
+  valor ⇒ papel não reconhecível ⇒ falha de sessão (edge case — nunca
+  liberar por omissão); mapeamento NO PAINEL é explícito: `admin` →
+  administrador, `employee` → funcionário.
 
-**POST `/auth/refresh`** — troca token de renovação por nova sessão.
+**POST `/api/v1/auth/refresh`** — troca token de renovação por nova sessão.
 
-- Request: `{ "refresh_token": "<JWT de renovação>" }` (ou autenticação por
-  cookie httpOnly, a confirmar no Swagger)
-- 200: mesmo formato da resposta de login
-- 401: token de renovação inválido/expirado → encerra sessão (FR-007)
+- Request: `{ "refreshToken": "<string opaca>" }` (corpo; **não** há
+  variante por cookie httpOnly)
+- 200: mesmo formato da resposta de login (inclui `role` renovado) — e
+  **rotaciona** o token de renovação (novo `refreshToken` na resposta; o
+  anterior deixa de valer; token de renovação é de **uso único**)
+- 401/422: token de renovação inválido/expirado → encerra sessão (FR-007)
+- Painel garante no máximo uma renovação em curso por ciclo de expiração
+  (US3, cenário 4)
 
-**POST `/auth/logout`** — encerra a sessão no backend, se previsto.
+**POST `/api/v1/auth/logout`** — encerra a sessão no backend (confirmado —
+não é mais "se previsto").
 
-- Request: sessão vigente (token); Response 204
-- O painel trata inexistência deste endpoint como: logout apenas local
-  (registro de divergência anotado nos artefatos da spec).
+- Sem corpo de requisição; autenticação via
+  `Authorization: Bearer <accessToken>` (security scheme **`HTTPBearer`** do
+  OpenAPI)
+- 204 sem corpo; 401 com sessão já encerrada → tratar como logout concluído
 
-**GET `/auth/me`** *(opcional, a confirmar no Swagger)* — dados do operador
-da sessão vigente (id, username, name, role); usado para renovar moldura
-após recarga de página.
+**GET `/api/v1/auth/me`** (confirmado — não é mais opcional) — identidade da
+sessão vigente.
+
+- Autenticação via `Authorization: Bearer`; sem corpo de requisição
+- 200 → `{ "username": "<string>", "role": <string> }` — **não** há `id`
+  nem `name`
+- Usado para restaurar identificação/papel da moldura após recarga de página
+  (FR-016); 401 → fluxo de renovação (FR-006/FR-007)
+
+**Health (fora do escopo funcional):** `GET /health` →
+`{ "status": "ok", "database": "ok" }`. O painel NÃO DEVE substituir os
+estados de carregamento/erro por sondagens de health (Princípio V).
 
 **Autorização para o resto da API (efeito do RBAC)**
 
+- Security scheme global **`HTTPBearer`**: toda rota de negócio exige
+  `Authorization: Bearer <accessToken>` anexado apenas server-side
+  (`src/shared/lib/http.ts` / túnel BFF — Constraint 5 da constituição).
 - Toda rota protegida que o funcionário não pode usar responde 403 quando
   chamada com sessão de funcionário. O painel trata 403 como estado de erro
   da ação (dados/área não autorizada), nunca como exceção silenciosa.
+
+**Divergências do baseline (compare campo a campo, 2026-11-01)**
+
+1. **Prefixo `/api/v1/`** em todas as rotas de autenticação — o baseline
+   previa `/auth/...` sem prefixo de versão.
+2. **Campos de sessão em camelCase** (`accessToken`, `refreshToken`,
+   `tokenType`, `expiresIn`, `role`) — o baseline previa snake_case
+   (`access_token`, `refresh_token`, `expires_in`). Convenção de API do
+   backend (`camelcase-json`).
+3. **Sem objeto `user`** no login/refresh e **sem `id`/`name`** em qualquer
+   resposta de identidade: papel no nível raiz; identificação exibível é
+   `username` + `role` (via login ou `/auth/me`).
+4. **Erros unificados** `ApiError { errorCode, message, details }` (ex.:
+   `errorCode: "authentication_failed"`) — o baseline previa
+   `{ "detail": "..." }`. Exceção documentada: 422 usa
+   `HTTPValidationError` padrão do FastAPI.
+5. **`GET /api/v1/auth/me` existe** (baseline: opcional).
+6. **`POST /api/v1/auth/logout` existe** (baseline: "se previsto" —
+   logout apenas local se ausente).
+7. **Refresh por corpo JSON `refreshToken`** — a alternativa "por cookie
+   httpOnly, a confirmar" do baseline foi descartada pelo Swagger real.
+
+**Pendências pós-compare: RESOLVIDAS (2026-11-06)**
+
+- ~~Valores exatos de `role`~~ — **resolvido por login real** contra a
+  API "Passanorte API" (`http://localhost:8010`): `"admin"` /
+  `"employee"` (registrado acima).
+- ~~Credenciais de seed reais~~ — **resolvido**: login real confirmado com
+  credenciais de seed fornecidas pelo owner (usadas apenas no teste;
+  credenciais NUNCA são registradas em artefatos). As fixtures do modo mock
+  (`admin`/`admin`, `funcionario`/`funcionario`) respondem 401 na API real
+  e DEVEM ser removidas junto com os mocks antes do encerramento da SPE-01.

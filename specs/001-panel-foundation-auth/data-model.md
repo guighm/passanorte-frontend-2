@@ -1,6 +1,7 @@
 # Data Model: Fundações e Autenticação do Painel
 
-**Feature**: 001-panel-foundation-auth · **Date**: 2026-10-30
+**Feature**: 001-panel-foundation-auth · **Date**: 2026-11-06 *(re-confirmado
+contra a API real "Passanorte API" — `http://localhost:8010`)*
 
 O painel não persiste dados de negócio (back-end FastAPI é o dono). O modelo
 abaixo descreve os objetos de sessão e identidade que atravessam o painel.
@@ -9,38 +10,41 @@ abaixo descreve os objetos de sessão e identidade que atravessam o painel.
 
 ### Operator (Operador da sessão)
 
-Origem: resposta de `POST /auth/login` (e `GET /auth/me`). Nunca contém
-credenciais nem dados de turista (RNF08).
+Origem: `POST /api/v1/auth/login` devolve papéis na raiz **sem
+`username`** — a identidade é o username submetido ao login; o
+`GET /api/v1/auth/me` devolve `{ "username": string, "role": string }` e
+revalida a identidade da sessão (T029). Nunca contém credenciais nem dados
+de turista (RNF08); **não há `id` nem `name`** em nenhuma resposta do
+contrato confirmado (T039/M2).
 
 | Campo | Tipo | Regras |
 | --- | --- | --- |
-| `id` | string | identificador vindo da API; imutável no painel |
-| `username` | string | exibido onde relevante; nunca como dado sensível |
-| `name` | string | exibição no cabeçalho do shell |
-| `role` | enum | `"administrador"` \| `"funcionário"` — obrigatório; valor fora do enum ⇒ falha de sessão (edge case da spec) |
+| `username` | string | exibição no cabeçalho do shell; nunca como dado sensível |
+| `role` | enum | `"admin"` \| `"employee"` (**valores exatos confirmados por login real, 2026-11-06**); valor fora do enum ⇒ falha de sessão (edge case da spec) |
 
-Validações (Princípio II): o painel NUNCA deduz ou edita `role` — apenas
-consome o valor retornado; `role` ausente/inválido ⇒ invalidar sessão.
+Validações (Princípio II): o painel NUNCA deduz ou edita `role` — mapeia
+explicitamente os dois valores canônicos e consome o valor retornado;
+`role` ausente/inválido ⇒ invalidar sessão.
 
 ### PanelSession (Sessão local do painel)
 
-Origem: criada no login, renovada via `/auth/refresh`, destruída no logout.
-Residência: httpOnly cookies gravados por Route Handlers — inacessíveis ao
-JS do navegador (FR-005).
+Origem: criada no login, renovada via `/api/v1/auth/refresh`, destruída no
+logout. Residência: httpOnly cookies gravados por Route Handlers —
+inacessíveis ao JS do navegador (FR-005).
 
 | Campo | Onde vive | Regras |
 | --- | --- | --- |
-| `session` | cookie httpOnly | carrega o par de tokens/vigência repassado à API; nome sugerido `passanorte.session` |
-| `refresh` | cookie httpOnly | token de renovação; usado apenas server-side |
-| expiração | atributos do cookie | alinhados a `expires_in` do contrato; renovação server-side antes de expirar por uso |
+| `session` | cookie httpOnly | carrega o par de tokens/vigência repassado à API; nome `passanorte.session` |
+| `refresh` | cookie httpOnly | token de renovação (string opaca, uso único); usado apenas server-side |
+| expiração | atributos do cookie | alinhados a `expiresIn` do contrato (**3600 s observados**); renovação server-side antes de expirar por uso |
 
 Transições de estado (todas server-side):
 
 ```text
 ausente --login 200--> ativa
-ativa   --/auth/refresh 200--> ativa (novos tokens, mesma sessão)
-ativa   --logout 204--> nula (cookies expirados; + POST /auth/logout se previsto)
-ativa   --/auth/refresh 401--> nula (redireção ao login com aviso)
+ativa   --/api/v1/auth/refresh 200--> ativa (NOVO token de renovação — ROTACIONADO, T043)
+ativa   --logout 204--> nula (cookies expirados; + POST /api/v1/auth/logout — confirmado)
+ativa   --/api/v1/auth/refresh 401--> nula (redireção ao login com aviso)
 ativa   --resposta divergente do contrato--> nula + erro explícito (Princípio I)
 ```
 
@@ -51,10 +55,10 @@ server-side; requisições simultâneas aguardam o mesmo resultado.
 
 Valor superficial de navegação consumido por `src/features/auth/guards`:
 
-| Papel | Rotas no painel |
+| Papel (valor da API) | Rotas no painel |
 | --- | --- |
-| `administrador` | `/`, `/admin/*`, `/beneficios` |
-| `funcionário` | `/beneficios` |
+| `admin` | `/`, `/admin/*`, `/benefits` |
+| `employee` | `/benefits` |
 | sem sessão | `/login` apenas |
 
 Regra cardinal (Princípio II): o papel governa navegação; a autorização real

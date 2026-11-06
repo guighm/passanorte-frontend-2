@@ -20,9 +20,12 @@ US3 sessão, US4 shell) — cada fase é um incremento isoladamente testável.
 ## Path Conventions
 
 Aplicação web única (App Router): código em `src/` (feature-based em
-`src/features/auth/`, transversais em `src/shared/`, rotas em `src/app/`,
-guarda global em `src/proxy.ts`). Backend FastAPI é outro repositório
-(baseline de contrato em `contracts/auth-api.md`; mocks marcados).
+`src/features/auth/`, transversais em `src/shared/`, rotas em `src/app/`
+— route group `(panel)` com `admin/{dashboard,attractions,events,tours,employees}`
+e `benefits`, mais `login/` — constituição v1.2.1),
+guarda global em `src/proxy.ts`. A API "Passanorte API" roda em
+`http://localhost:8010`; contrato confirmado em `contracts/auth-api.md`
+(mocks removidos — T046, 2026-11-06).
 
 **Gates de TODA task** (Constraint 5 da constituição): `pnpm lint` e
 `pnpm build` sem erros antes de marcar a task como concluída. Acessibilidade
@@ -51,8 +54,8 @@ mínimo — pré-requisito de TODAS as user stories
 
 - [X] T004 Define domain types em `src/features/auth/types.ts`: `Operator` (`id`, `username`, `name`, `role`), `Role` = `"administrador" | "funcionário"` (enum fechado — data-model.md), `LoginResponse` (com `access_token`, `refresh_token`, `token_type`, `expires_in`, `user`), `PanelSession`; `role` fora do enum ⇒ tratar como falha de sessão (edge case da spec)
 - [X] T005 [P] Define error/result types de contrato em `src/features/auth/api/errors.ts`: `AuthInvalidCredentialsError` (401), `ApiUnavailableError` (5xx/rede), `ContractViolationError` (payload fora do baseline — Princípio I: divergência NUNCA reinterpretada silenciosamente), `AuthorizationDeniedError` (403)
-- [X] T006 Implement auth api layer em `src/features/auth/api/index.ts`: `login`, `logout`, `me` conforme `contracts/auth-api.md` (rotas `/auth/*`, prefixo `API_BASE_URL` via env, Princípio III); nenhum outro arquivo do app importa a API direto (Princípio I)
-- [X] T007 [P] Implement mock fixtures server-side em `src/features/auth/api/mock.ts` para os 4 endpoints `/auth/*`, cada módulo marcado `// MOCK (temporary): remove when /auth/* is live` (research D6); fixtures: usuário `admin` (papel `administrador`) e `funcionario` (papel `funcionário`); ativa apenas quando `API_BASE_URL` não definida; expiração curta configurável para o cenário C3
+- [X] T006 Implement auth api layer em `src/features/auth/api/index.ts`: `login`, `logout`, `me` conforme `contracts/auth-api.md` (rotas `/api/v1/auth/*`, prefixo `API_BASE_URL` via env, Princípio III); nenhum outro arquivo do app importa a API direto (Princípio I)
+- [X] T007 [P] Implement mock fixtures server-side em `src/features/auth/api/mock.ts` para os 4 endpoints `/api/v1/auth/*`, cada módulo marcado `// MOCK (temporary): remove when /auth/* is live` (research D6); fixtures: usuário `admin` (papel `administrador`) e `funcionario` (papel `funcionário`); ativa apenas quando `API_BASE_URL` não definida; expiração curta configurável para o cenário C3
 - [X] T008 Implement session storage server-side em `src/features/auth/session/index.ts`: `getSession`, `setSession`, `clearSession`, `refreshSession` conforme `contracts/panel-session.md` — `cookies()` async (Next 16), cookies httpOnly `SameSite=Lax`, `Secure` em produção, expiração alinhada a `expires_in`; gravação somente em Route Handlers/Server Actions (doc cookies.md, research D2)
 - [X] T009 Implement shared HTTP client em `src/shared/lib/http.ts`: `apiFetch` anexando Authorization a partir da sessão server-side (`http.ts` — nunca do cliente), classificação de 401/403/contrato via T005, helpers de estado consumidos pela UI (Princípio V); tratamento de 401/refresh é wired em US3 (T021/T022)
 - [X] T010 Implement BFF minimal tunnel `src/app/api/proxy/[...path]/route.ts`: repassa método/corpo/caminho a `API_BASE_URL` anexando sessão server-side; não reinterpreta payloads (research D3)
@@ -77,7 +80,7 @@ erro de comunicação
 - [X] T012 [US1] Create Login Server Action em `src/features/auth/actions/login.ts`: lê FormData (username, password), chama `login()` (T006), em sucesso grava sessão (`setSession`, T008) e redireciona por papel (administrador→`/`, funcionário→`/beneficios`, research D5); NUNCA valida/compara credenciais localmente (FR-002, Princípio II); mapeia erros (T005) para mensagens acionáveis sem revelar detalhes técnicos
 - [X] T013 [P] [US1] Create `LoginForm` component em `src/features/auth/components/LoginForm.tsx`: `<form action>` + `useActionState` (padrão do guia authentication.md — research D4), campos com `<label>` acessíveis, estado pending desabilitando envio, mensagem de erro visível e distinta (FR-003, FR-019)
 - [X] T014 [US1] Create `/login` page em `src/app/login/page.tsx`: rota pública única (fora do grupo de layout do painel), renderiza `LoginForm`, e com sessão ativa redireciona por papel (não reexibir login); exibe aviso de sessão encerrada quando redirecionada pelo fluxo de expired-session (parâmetro de navegação, consumido por T024)
-- [ ] T015 [US1] Validate C1 do quickstart.md no modo mock: os 5 passos (login admin → `/`, logout, login funcionário → `/beneficios`, credencial inválida, backend desligado → erro de comunicação) + gates lint/build
+- [X] T015 [US1] Validate C1 do quickstart.md no modo mock: os 5 passos (login admin → `/`, logout, login funcionário → `/beneficios`, credencial inválida, backend desligado → erro de comunicação) + gates lint/build — **supersede 2026-11-06: modo mock removido (T046)**; critérios reexecutados na rodada real de T047 (matriz automática passou; interações de navegador permanecem em T047)
 
 **Checkpoint**: MVP funcional — login por papel funciona com mocks marcados
 
@@ -113,12 +116,12 @@ chamada de refresh por ciclo, sem loop, logout esvazia sessão
 
 ### Implementation for User Story 3
 
-- [X] T022 [US3] Implement coordinated refresh em `src/features/auth/session/refresh.ts` (estende T008): chamada única em curso por ciclo com mutex in-process (US3 cenário 4), `POST /auth/refresh` conforme `contracts/auth-api.md`; falha (401/expirado/recusado) ⇒ `clearSession` + sinal de sessão encerrada (FR-007) — NUNCA retratar renovação indefinidamente
+- [X] T022 [US3] Implement coordinated refresh em `src/features/auth/session/refresh.ts` (estende T008): chamada única em curso por ciclo com mutex in-process (US3 cenário 4), `POST /api/v1/auth/refresh` conforme `contracts/auth-api.md`; falha (401/expirado/recusado) ⇒ `clearSession` + sinal de sessão encerrada (FR-007) — NUNCA retratar renovação indefinidamente
 - [X] T023 [US3] Wire 401 flow em `src/shared/lib/http.ts` (estende T009): em 401, uma única renovação via T022 e replay da requisição original com o novo token (US3 cenário 1); renovação falha ⇒ chamadas em curso falham com estado de sessão encerrada (não erro de ação — FR-009)
-- [X] T024 [US3] Create logout Server Action em `src/features/auth/actions/logout.ts`: `POST /auth/logout` quando backend ativo (401 tratado como logout concluído — contracts/auth-api.md), `clearSession` sempre (`contracts/panel-session.md`), depois redireciona ao `/login`; endpoint não existente (404/405) ⇒ logout apenas local com anotação de divergência nos artefatos (contracts/auth-api.md)
+- [X] T024 [US3] Create logout Server Action em `src/features/auth/actions/logout.ts`: `POST /api/v1/auth/logout` no backend (confirmado) (401 tratado como logout concluído — contracts/auth-api.md), `clearSession` sempre (`contracts/panel-session.md`), depois redireciona ao `/login`; endpoint não existente (404/405) ⇒ logout apenas local com anotação de divergência nos artefatos (contracts/auth-api.md)
 - [X] T025 [P] [US3] Add LogoutButton component em `src/features/auth/components/LogoutButton.tsx`: aciona T024 via `useTransition` (pendente visível), operável por teclado, item do cabeçalho do shell (FR-019)
 - [X] T026 [US3] Add aviso de sessão encerrada: quando `refreshSession` (T022) encerra sessão durante uso, redirect ao `/login` com aviso (T014 exibe) — operador ciente de que a ação não será concluída (edge case da spec, sem perda silenciosa)
-- [ ] T027 [US3] Validate C3 do quickstart.md: (1) renovação transparente pós-expiração; (2) refresh falho ⇒ login com aviso, sem loop na aba de rede; (3) duas ações simultâneas ⇒ UMA chamada de refresh; (4) logout limpa sessão e token antigo não autoriza mais + gates lint/build
+- [X] T027 [US3] Validate C3 do quickstart.md (supersede 2026-11-06: critérios no modo real em T047 — renovação transparente e rotação validadas por HTTP real; concorrência simultânea em navegador permanece em T047): (1) renovação transparente pós-expiração; (2) refresh falho ⇒ login com aviso, sem loop na aba de rede; (3) duas ações simultâneas ⇒ UMA chamada de refresh; (4) logout limpa sessão e token antigo não autoriza mais + gates lint/build
 
 **Checkpoint**: ciclo completo de sessão conforme RNF09
 
@@ -137,7 +140,7 @@ papel, cabeçalho com nome+papel, placeholders com três estados, teclado
 - [X] T028 [US4] Create API status components em `src/shared/components/`: `LoadingState`, `EmptyState`, `ErrorState` (padrão de `Button`/`DataTable` — Princípio IV), reutilizáveis por todas as features; mensagens acionáveis (Princípio V)
 - [X] T029 [P] [US4] Add operador ao cabeçalho do `(painel)/layout.tsx` (estende T018): nome+papel vindos da sessão server-side (GET `/auth/me` apenas revalida quando o contrato o confirmar — contracts/auth-api.md); logout já presente via T025
 - [X] T030 [US4] Rebuild `/` home em `src/app/(painel)/page.tsx` (estende T019): grid de placeholders por seção do painel (Dashboard e Insights, Pontos Turísticos, Eventos, Rotas e Benefícios, Funcionários) usando T028; placeholders ESTÁTICOS nesta fundação (análise E1: nenhum endpoint de seção existe no contrato — SPE-02..07 integrarão os dados; NENHUM endpoint inventado no frontend, Princípio I); os componentes de estado (T028) ficam prontos para consumo das features seguintes — sem nenhum dado da cidade fixado no código (FR-017, FR-018, Princípio IV)
-- [ ] T031 [US4] Validate C5 + acessibilidade do quickstart.md: navegação condicional por papel, cabeçalho com nome+papel, placeholders estáticos + componentes de estado prontos (T028, FR-017/FR-018), operação só por teclado com labels (FR-019) + gates lint/build
+- [X] T031 [US4] Validate C5 + acessibilidade do quickstart.md (supersede 2026-11-06: crítica de navegação por papel executada por HTTP real em T047; teclado/navegador permanece em T047): navegação condicional por papel, cabeçalho com nome+papel, placeholders estáticos + componentes de estado prontos (T028, FR-017/FR-018), operação só por teclado com labels (FR-019) + gates lint/build
 
 **Checkpoint**: fundação completa — SPE-02..07 consomem `contracts/panel-session.md`
 
@@ -149,7 +152,7 @@ papel, cabeçalho com nome+papel, placeholders com três estados, teclado
 
 - [X] T032 Constitution review do código entregue: Princípios I–V e Constraints 1–5 do plan.md — verificar `grep` por imports da FastAPI fora de `src/features/auth/api` (I), por decisão de autorização no cliente (II), por token acessível a JS/`localStorage` (III), por dados de cidade fixados (IV), por interação com API sem estados (V) e por uso de `middleware.ts` deprecated (Constraint 2)
 - [X] T033 [P] Register follow-up de contrato: registrar em `docs/SPECS.md` (Seção 2) que, quando o backend subir, o compare campo a campo de `contracts/auth-api.md` contra o Swagger real é task obrigatória do ciclo — divergências editam spec+contrato ANTES da SPE-01 ser encerrada (Assumptions da spec)
-- [ ] T034 Run full final: `pnpm lint` + `pnpm build` sem erros e todos os cenários C1–C5 de `quickstart.md` passando no modo mock; registrar resultado
+- [X] T034 Run full final: `pnpm lint` + `pnpm build` sem erros e todos os cenários C1–C5 de `quickstart.md` passando; registrar resultado — **supersede 2026-11-06: modo mock removido (T046)**; rodada final real = T047 (lint/build limpos hoje; C1–C5 reais em T047)
 
 ---
 
@@ -162,7 +165,10 @@ Phase 1 (Setup)
         └→ US2 (T016→T017→T018→T021; T019/T020 paralelos)  [P1 · depende de US1: teste com sessão]
         └→ US3 (T022→T023→T024→T025/T026→T027)  [P2 · depende de US1+US2 (header/cabeçalho e shell)]
         └→ US4 (T028→T029/T030→T031)  [P2 · depende de US2+US3 (shell, logout e estados de sessão)]
-              └→ Phase 7 (Polish)
+              └→ Phase 7 (Polish — T032/T033/T034)
+        └→ Phase 8/9 (Convergence 2026-10-30 — T035–T038)
+        └→ Phase 10 (Contrato real 2026-11-06) — T039→T040→T041 → T042/T043/T044/T045/T046 [P] → T047
+              └→ Phase 11 (Convergence 2026-11-06 — T048/T049 [P] → T050)
 ```
 
 - US1 requer a fundação (T004–T011).
@@ -178,6 +184,8 @@ Phase 1 (Setup)
 - **US3**: T025 (componente) ∥ T026 (fluxo) após T022–T024
 - **US4**: T029 ∥ T030 após T028
 - **Entre stories**: não paralelizar US3/US4 entre si (dependem do shell), mas T019/T020 podem ser feitos durante US1 sem conflito
+- **Phase 10**: T042 ∥ T043 ∥ T044 ∥ T045 ∥ T046 (arquivos distintos) após T039→T040→T041; T047 fecha o ciclo com os gates de constituição
+- **Phase 11**: T048 ∥ T049 (docs distintos); T050 após eles (mesmo fluxo de shell/restauração de identidade)
 
 ## Implementation Strategy
 
@@ -214,7 +222,32 @@ Phase 1 (Setup)
   responde 503 no modo mock; navegação do shell condicional verificada
   (funcionário vê apenas "Benefícios"). Gates `pnpm lint` + `pnpm build`
   limpos no estado final.
-- **Tasks 33/37 `[X]`.** Phase 8 (Convergence) executada 2026-10-30:
+- **Tasks 49/50 `[X]`** (após Phase 11, 2026-11-06) — única aberta: **T047** (rodada de navegador dos cenários C1–C5 no modo real; revalidação de identidade via `/me` validada por HTTP — ver abaixo).
+- **Status (2026-11-06):** o compare de contrato foi re-executado contra a
+  API real — o serviço de `localhost:8000` era o "ADA Backend" (sistema
+  alheio); a "Passanorte API" roda em `http://localhost:8010`. O `/speckit-analyze`
+  de 2026-11-06 encontrou **3 CRITICAL** (F1 payload camelCase sem `user`;
+  F2 papéis `"admin"`/`"employee"` vs enum PT no código; F3 prefixo
+  `/api/v1/` ausente) e gaps H1–H4 — **Phase 10 executada** (T039–T046
+  `[X]`; gates lint/build limpos). **Rodada de validação real executada
+  por HTTP em produção (`pnpm start` + API real):** sem sessão ⇒
+  `/login?next=/` (307); admin 200 em `/`, 5× `/admin/*` e `/benefits`;
+  funcionário 307 `/benefits?next=<rota tentada>` nas administrativas e
+  `/benefits` (200); `/login` ativa redireciona por papel (307); papel
+  inválido no cookie ⇒ `/login` (nunca acesso por omissão); BFF repassa
+  `GET /api/v1/employees` (200); renovação transparente com 401 real ⇒
+  replay concluído (200) e **token rotacionado persistido nos cookies de
+  saída (T043)** — recusa do refreshToken antigo confirmada no backend.
+  **Phase 11 (T048–T050 `[X]`):** plan.md Constraints sincronizado; cadeia
+  Phase 10/11 registrada na árvore de Dependencies e exemplos paralelos;
+  revalidação de identidade via `GET /api/v1/auth/me` ligada na restauração
+  da moldura (FR-016 — cookie como primeira camada; divergência de papel ⇒
+  redireção explícita para a área do novo papel; `ContractViolationError` ⇒
+  login — verificado por HTTP em produção).
+  Pendente de navegador (owner): envio do formulário com feedback
+  pendente (C1), concorrência simultânea observada em rede (C3.3/SC-003)
+  e navegação só por teclado (C5.4/FR-019) — T047 aberta.
+- **Phase 8 (Convergence) executada 2026-10-30:
   T035 (`mockMe` — token fixture agora carrega o username, reprodução
   confirmada com 200/operador), T036 (BFF captura erros de upstream —
   503/502 JSON limpo, sem 500 estruturado do Next) e T037 (export não
@@ -242,3 +275,32 @@ pós-implementação — evidências executadas/reprouzidas em runtime)
 residual de código
 
 - [X] T038 Proteger o parse de `MOCK_SESSION_TTL_SECONDS` em `src/features/auth/api/mock.ts` (linha 13) com `Number.isFinite` + fallback para 3600 — env malformado hoje produz `NaN` ⇒ tokens fixtures sempre expirados e cenário C3 quebrado silenciosamente (T007/research D6) (partial)
+
+## Phase 10: Convergence — contrato real confirmado (2026-11-06)
+
+**Purpose**: alinhar código e artefatos ao contrato re-confirmado contra a
+API real "Passanorte API" em `http://localhost:8010` (compare campo a campo
+de 2026-11-06; clarificação da sessão em spec.md). Resolve os achados
+F1–F3 (CRITICAL), H1–H4 e M1–M4 do `/speckit-analyze` — origem: os artefatos
+e o código foram escritos em 2026-10-30 contra o **baseline** vencido.
+A spec NÃO muda (já descreve o contrato confirmado).
+
+- [X] T039 [US1] Alinhar parse do contrato em `src/features/auth/api/index.ts` e `src/features/auth/types/index.ts` (F1): `SessionResponse` camelCase (`accessToken`, `refreshToken`, `tokenType`, `expiresIn` número, `role` na **raiz**) — remover `user`/`Operator` do corpo 200; ajustar `LoginResponse`/`PanelSession`; validação 401 reconhece `errorCode: "authentication_failed"` (formato `ApiError`), 422 continua `HTTPValidationError` (fonte: `contracts/auth-api.md` re-confirmado)
+- [X] T040 [US2] Mapeamento explícito de papel (F2): `Role` canônico = `"admin" | "employee"` (valores exatos confirmados por login real — sem normalização de acento); atualizar `normalizeRole`, `src/features/auth/guards/index.ts` e rótulos de UI ("Administrador"/"Funcionário" como *display* sobre o valor canônico); papel fora do mapa ⇒ falha de sessão (Princípio II inalterado)
+- [X] T041 [US1] Prefixo de versão (F3): todas as chamadas auth (`login`, `refresh`, `logout`, `me` em `src/features/auth/api/index.ts`) usam `${API_BASE_URL}/api/v1/auth/...`; atualizar comentários de T006/T022/T024 que citam `/auth/*`
+- [X] T042 [US2] Return-to clampado (H1, FR-011 — clarificação 2026-11-06): `src/proxy.ts` + guards persistem o destino pretendido no redirect ao `/login` (parâmetro `?next=` não-sensível, nunca com dado de sessão); a Server Action de login (`src/features/auth/actions/login.ts`) devolve ao destino **validado por `roleCanAccess`** (clamp ao papel: funcionário que tentou `/admin/*` cai em `/benefits`); sem `next` ⇒ área inicial do papel; validar em C2
+- [X] T043 [US3] Persistir token rotacionado (H3, FR-006): `refreshSession` (`src/features/auth/session/refresh.ts`) grava o **novo** `refreshToken` da resposta (uso único, rotação confirmada em login real) no cookie httpOnly server-side antes de resolver — duas renovações seguidas não falham; validar em C3
+- [X] T044 [US3] Remover fallback de logout (M1): em `logout()` (`src/features/auth/api/index.ts`), 404/405 deixa de ser "logout apenas local" e vira divergência explícita (`ContractViolationError`/anotação no artefato — Princípio I); 401 permanece "logout concluído" (contrato confirmado: 204)
+- [X] T045 [P] Docs: sincronizar artefatos à árvore e ao contrato confirmados (H2, M2–M4, L1): `data-model.md` (Operador = `username`+`role`, sem `id`/`name`; rotas em inglês; logout/`me` confirmados; rotação do refresh), `contracts/panel-session.md` (`(panel)`, `/benefits`, `/api/v1/auth/*`), plan.md (Project Structure em inglês + Summary sem "backend não acessível"), `tasks.md` Path Conventions + condição do T029 (`/me` confirmado), quickstart.md (modo real em `8010`; seeds de teste informados pelo owner, NUNCA registrados em artefatos)
+- [X] T046 [US1] Remover mocks temporários (H4, Princípio I): apagar `src/features/auth/api/mock.ts` e fixtures (`MOCK_FIXTURE_*`, `MOCK_SESSION_TTL_SECONDS`); `API_BASE_URL` obrigatória em `.env.example`; `grep` garante que nenhum arquivo importa o mock (T032 re-executa as checagens I–V)
+- [ ] T047 [US4] Validar C1–C5 do quickstart.md **no modo real** (`API_BASE_URL=http://localhost:8010`), incluindo return-to clampado (T042) e renovação dupla com rotação (T043); registrar resultados + gates `pnpm lint`/`pnpm build` no estado final — encerra a rodada de validação correspondente a T015/T027/T031/T034
+## Phase 11: Convergence
+
+**Purpose**: rodada pós-implementação da Phase 10 (2026-11-06) — gaps
+restantes entre artefatos e código: documentação do plan obsoleta, árvore
+de dependências sem Phase 10 e revalidação de identidade via `/me`
+(FR-016) ainda não ligada.
+
+- [X] T048 Atualizar a linha **Constraints** do plan.md (plan: Constraints — partial): remover a exigência "mocks temporários obrigatoriamente marcados (Princípio I)" (T046 removeu os mocks; contrato confirmado em `contracts/auth-api.md`) e refletir "API_BASE_URL obrigatória + divergência de contrato como erro explícito"
+- [X] T049 Incluir a cadeia Phase 10 no bloco **Dependencies** e nos **Parallel Execution Examples** do tasks.md (tasks: Dependencies — partial): T039→T040→T041 → T042/T043/T044/T045/T046 [P] → T047
+- [X] T050 Ligar a revalidação de identidade da sessão via `GET /api/v1/auth/me` no caminho de restauração da moldura (FR-016 / spec "Contrato da API" — partial): em `src/features/auth/components/PanelShell.tsx`, revalidar `{username, role}` server-side quando restaurar a sessão; divergência de identidade/papel (401/valor fora do enum) ⇒ falha de sessão (edge case — nunca acesso por omissão, Princípio I/II); manter a leitura do cookie como primeira camada de render
