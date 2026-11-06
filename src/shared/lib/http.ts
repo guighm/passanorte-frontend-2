@@ -10,6 +10,7 @@
 
 import { redirect } from "next/navigation";
 import {
+  ApiRequestError,
   ApiUnavailableError,
   AuthorizationDeniedError,
   ContractViolationError,
@@ -71,14 +72,52 @@ export async function apiFetch(path: string, init: RequestInit = {}): Promise<Re
   return response;
 }
 
-/** apiFetch + parse JSON protegido contra payload fora do contrato (Princípio I). */
+/**
+ * Classifica uma resposta HTTP não-ok a partir do corpo (T004 — research
+ * D4, ponto ÚNICO de classificação de erro — Princípio I):
+ * - corpo `ApiError { errorCode, message, details }` ⇒ ApiRequestError;
+ * - corpo `HTTPValidationError { detail: [...] }` (exceção documentada do
+ *   FastAPI, 422) ⇒ ApiRequestError com errorCode "validation_error";
+ * - sem corpo/corpo inesperado ⇒ ApiUnavailableError (semântica anterior).
+ * 401/403 NÃO chegam aqui: já classificados em apiFetch.
+ */
+export async function throwApiErrorResponse(
+  response: Response,
+  path: string,
+): Promise<never> {
+  let body: unknown = null;
+  try {
+    body = await response.json();
+  } catch {
+    body = null; // sem corpo JSON — desfecho abaixo
+  }
+  if (typeof body === "object" && body !== null) {
+    const unified = body as { errorCode?: unknown; message?: unknown; details?: unknown; detail?: unknown };
+    if (typeof unified.errorCode === "string" && typeof unified.message === "string") {
+      throw new ApiRequestError(
+        response.status,
+        unified.errorCode,
+        unified.message,
+        Array.isArray(unified.details) ? unified.details : [],
+      );
+    }
+    if (Array.isArray(unified.detail)) {
+      // HTTPValidationError padrão do FastAPI (exceção documentada ao ApiError)
+      throw new ApiRequestError(response.status, "validation_error", "Dados inválidos para o endpoint.", unified.detail);
+    }
+  }
+  throw new ApiUnavailableError(`HTTP ${response.status} em ${path}`);
+}
+
+/** apiFetch + parse JSON protegido contra payload fora do contrato (Princípio I).
+ * Respostas não-ok são classificadas em um único ponto (throwApiErrorResponse). */
 export async function apiJson<T>(
   path: string,
   init: RequestInit = {},
 ): Promise<{ status: number; data: T }> {
   const response = await apiFetch(path, init);
   if (!response.ok) {
-    throw new ApiUnavailableError(`HTTP ${response.status} em ${path}`);
+    await throwApiErrorResponse(response, path);
   }
   const data: unknown = await response.json().catch(() => {
     throw new ContractViolationError(`${path}: resposta sem JSON (contrato espera objeto)`);
