@@ -15,7 +15,7 @@
 // Entrada manual de coordenadas (FR-009) vive no SpotFormDialog — este
 // componente só complementa (bidirecional via props/onChange).
 
-import { APIProvider, Map, Marker, useApiIsLoaded } from "@vis.gl/react-google-maps";
+import { APIProvider, Map, Marker, useApiLoadingStatus } from "@vis.gl/react-google-maps";
 import { useMemo } from "react";
 
 export interface SpotMapPickerProps {
@@ -54,9 +54,12 @@ export default function SpotMapPicker({ latitude, longitude, fallbackCenter, onC
   );
 }
 
-/** Exibe o mapa apenas quando o API do Google terminou de carregar
- * (`useApiIsLoaded` — deve viver SOB o APIProvider); skeleton distinto e
- * anunciável enquanto carrega (Princípio V, sem flash de mapa vazio). */
+/** Estados do carregamento da API do Google sob o APIProvider
+ * (`useApiLoadingStatus` — deve viver SOB o APIProvider): skeleton
+ * anunciável enquanto carrega; falha (ex.: billing não habilitado,
+ * AUTH_FAILURE) ⇒ estado de ERRO distinto com fallback p/ coordenadas
+ * manuais — nunca "carregando" infinito (Princípio V; bug revelado pelo
+ * BillingNotEnabledMapError). */
 function ApiLoadedGate({
   latitude,
   longitude,
@@ -68,8 +71,22 @@ function ApiLoadedGate({
   center: { lat: number; lng: number } | null;
   onChange: (latitude: number, longitude: number) => void;
 }) {
-  const loaded = useApiIsLoaded();
-  if (!loaded) {
+  const status = useApiLoadingStatus();
+  if (status === "FAILED" || status === "AUTH_FAILURE") {
+    return (
+      <div
+        role="alert"
+        className="text-body flex h-72 flex-col justify-center gap-2 rounded-md bg-warning-soft px-3 text-warning-soft-foreground"
+      >
+        <span className="text-title-4">Mapa indisponível ({status}).</span>
+        <span>
+          O Google não carregou o mapa para esta chave (ex.: billing não habilitado no projeto).
+          Defina a localização digitando a latitude/longitude abaixo.
+        </span>
+      </div>
+    );
+  }
+  if (status === "NOT_LOADED" || status === "LOADING") {
     return (
       <div role="status" aria-busy="true" className="flex h-72 flex-col gap-2 rounded-md border border-border p-3">
         <div className="h-3 w-2/3 animate-pulse rounded bg-surface-muted" />
