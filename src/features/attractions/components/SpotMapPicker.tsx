@@ -95,11 +95,16 @@ function ApiLoadedGate({
       </div>
     );
   }
+  // Sem centro conhecido (catálogo vazio e sem coordenada): visão padrão
+  // GLOBAL {0,0}/zoom 1 — default da biblioteca, NÃO é dado de cidade
+  // (RNF06); o picker segue funcional (clique/digitação). A lib EXIGE
+  // `center`+`zoom` (erro "component is missing configuration" se ausentes).
+  const effectiveCenter = center ?? { lat: 0, lng: 0 };
   return (
     <div className="h-72 w-full overflow-hidden rounded-md border border-border">
       <Map
         className="h-full w-full"
-        center={center ?? undefined}
+        center={effectiveCenter}
         zoom={center ? 13 : 1}
         gestureHandling="greedy"
         onClick={(event) => {
