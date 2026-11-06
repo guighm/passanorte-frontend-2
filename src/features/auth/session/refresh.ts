@@ -8,6 +8,7 @@
 // cada renovação, por isso duas renovações seguidas continuam válidas.
 
 import { refresh } from "@/features/auth/api";
+import { ContractViolationError } from "@/features/auth/api/errors";
 import type { PanelSession } from "@/features/auth/types";
 import { clearSession, getSession, setSession } from "@/features/auth/session";
 
@@ -46,5 +47,17 @@ async function doRefresh(
   // Identidade mantém o username da sessão; o papel é o RENOVADO da
   // resposta (T039) e validado/ajustado dentro de setSession — mudança de
   // papel reavalia os guardas (FR-014).
-  return setSession(response, { username: identity.username });
+  try {
+    return await setSession(response, { username: identity.username });
+  } catch (error) {
+    // T051 (edge case 1 da spec): papel reconhecido como FORA do enum na
+    // renovação é falha de sessão + divergência registrada (Princípio I).
+    // Sessão encerrada aqui (sem loop de tentativas); o erro segue
+    // explícito ao caller (apiFetch/BFF/PanelShell mapeiam como divergência).
+    if (error instanceof ContractViolationError) {
+      console.error("[contract-divergence] POST /api/v1/auth/refresh:", error.message);
+      await clearSession();
+    }
+    throw error;
+  }
 }

@@ -7,6 +7,7 @@ import { cookies } from "next/headers";
 import { io } from "next/cache";
 import type { Operator, PanelSession, SessionState, SessionResponse } from "@/features/auth/types";
 import { normalizeRole } from "@/features/auth/api";
+import { ContractViolationError } from "@/features/auth/api/errors";
 import {
   REFRESH_COOKIE,
   REFRESH_COOKIE_MAX_AGE_SECONDS,
@@ -67,7 +68,12 @@ export async function setSession(
 ): Promise<PanelSession> {
   const role = normalizeRole(identity.role ?? response.role);
   if (role === null) {
-    throw new Error("session-role-unrecognized");
+    // T051 (edge case 1 da spec): papel fora do enum confirmado é DIVERGÊNCIA
+    // de contrato registrada como defeito (Princípio I) — nunca acesso por
+    // omissão nem mensagem genérica de comunicação.
+    throw new ContractViolationError(
+      "Role fora do enum confirmado (\"admin\"|\"employee\") — POST /auth/login ou /auth/refresh: payload divergente",
+    );
   }
   const expiresAt = Date.now() + response.expiresIn * 1000;
   const operator: Operator = { username: identity.username, role };
