@@ -1,38 +1,45 @@
 "use client";
 
-// Wrapper client da listagem de funcionários (SPE-02 T014 — plano:
-// anfitrião dos diálogos a partir da Server Component page). Recebe a
-// listagem já carregada (research D2) e orquestra: cadastro (EmployeeFormDialog
-// → OneTimeCredentialDialog — credencial única, FR-008/D5), edição (modo
-// edit do mesmo diálogo, FR-009) e revogação/reativação com confirmação
-// (FR-010/FR-012). Após cada op confirmada, a page é revalidada pela
-// Server Function (FR-005) e o router reflete o estado da API.
+// Wrapper client da listagem de funcionários (SPE-02 rodada 2 — T007/T014,
+// rewire REVISÃO 2/D10): dados via useEmployeesQuery (cache TanStack Query
+// via túnel BFF), mutações de revogação/reativação com confirmação, e
+// orquestração dos diálogos (cadastro → credencial única; edição).
+// Estados distintos de carregamento/vazio/erro (Princípio V/SC-006);
+// revisitas vêm do cache; após cada mutação a lista é invalidada (FR-005).
+// Sessão encerrada (401 pós-renovação do túnel) ⇒ retorno ao login (FR-007).
 
 import { useRouter } from "next/navigation";
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { Plus } from "lucide-react";
 import Button from "@/shared/components/Button";
 import DataTable, { type DataTableColumnDef } from "@/shared/components/DataTable";
 import EmptyState from "@/shared/components/EmptyState";
-import { revokeEmployeeAction, reactivateEmployeeAction } from "@/features/employees/actions";
-import { describeActionFailure } from "@/features/employees/api/messages";
+import ErrorState from "@/shared/components/ErrorState";
+import LoadingState from "@/shared/components/LoadingState";
+import { SessionEndedError } from "@/features/auth/api/errors";
+import {
+  useEmployeesQuery,
+  useReactivateEmployeeMutation,
+  useRevokeEmployeeMutation,
+} from "@/features/employees/api/queries";
+import {
+  describeActionFailure,
+  failureFromError,
+  SESSION_ENDED_PATH,
+} from "@/features/employees/api/messages";
+import EmployeeStatusBadge from "@/features/employees/components/EmployeeStatusBadge";
 import EmployeeFormDialog from "@/features/employees/components/EmployeeFormDialog";
 import OneTimeCredentialDialog from "@/features/employees/components/OneTimeCredentialDialog";
 import ConfirmRevocationDialog from "@/features/employees/components/ConfirmRevocationDialog";
 import ConfirmReactivationDialog from "@/features/employees/components/ConfirmReactivationDialog";
 import RowActions from "@/features/employees/components/RowActions";
-import EmployeeStatusBadge from "@/features/employees/components/EmployeeStatusBadge";
 import type { EmployeeView, OneTimeCredential } from "@/features/employees/types";
-
-interface EmployeesViewProps {
-  employees: EmployeeView[];
-  total: number;
-}
 
 type FormState = { mode: "create" } | { mode: "edit"; employee: EmployeeView } | null;
 type ConfirmState = { kind: "revoke" | "reactivate"; employee: EmployeeView } | null;
 
 // D7 (clarificação 2026-11-06): ordem alfabética por nome, estável entre
-// revalidações — colator pt-BR case-insensitive definido uma única vez.
+// revalidações — collator pt-BR case-insensitive definido uma única vez.
 const nameCollator = new Intl.Collator("pt-BR", { sensitivity: "base" });
 
 const employeeDateFormat = new Intl.DateTimeFormat("pt-BR", { dateStyle: "short" });
@@ -46,13 +53,32 @@ function formatEmployeeDate(value: string): string {
   return value;
 }
 
-export default function EmployeesView({ employees, total }: EmployeesViewProps) {
+export default function EmployeesView() {
   const router = useRouter();
+  const employeesQuery = useEmployeesQuery();
+  const revokeMutation = useRevokeEmployeeMutation();
+  const reactivateMutation = useReactivateEmployeeMutation();
+
   const [formState, setFormState] = useState<FormState>(null);
   const [credential, setCredential] = useState<OneTimeCredential | null>(null);
   const [confirmState, setConfirmState] = useState<ConfirmState>(null);
   const [confirmError, setConfirmError] = useState<string | null>(null);
-  const [isConfirmPending, startConfirmTransition] = useTransition();
+
+  // Sessão encerrada na leitura ⇒ retorno ao login (FR-007/D10) — nunca
+  // tratado como "erro da tela".
+  useEffect(() => {
+    if (employeesQuery.error instanceof SessionEndedError) {
+      router.replace(SESSION_ENDED_PATH);
+    }
+  }, [employeesQuery.error, router]);
+
+  function handleMutationError(error: unknown): boolean {
+    if (error instanceof SessionEndedError) {
+      router.replace(SESSION_ENDED_PATH);
+      return true;
+    }
+    return false;
+  }
 
   const columns = useMemo<DataTableColumnDef<EmployeeView>[]>(() => [
     {
@@ -107,32 +133,64 @@ export default function EmployeesView({ employees, total }: EmployeesViewProps) 
 
   function confirmAction() {
     if (!confirmState) return;
+    setConfirmError(null);
     const { kind, employee } = confirmState;
-    startConfirmTransition(async () => {
-      const result =
-        kind === "revoke"
-          ? await revokeEmployeeAction(employee.id)
-          : await reactivateEmployeeAction(employee.id);
-      if (result.ok) {
-        setConfirmState(null);
-        setConfirmError(null);
-        router.refresh(); // FR-005: reflete o estado retornado pela API
-        return;
-      }
-      setConfirmError(describeActionFailure(result)); // status permanece; diálogo não reabre sozinho (US4.5)
+    const mutation = kind === "revoke" ? revokeMutation : reactivateMutation;
+    mutation.mutate(employee.id, {
+      onSuccess: () => {
+        setConfirmState(null); // invalidação (queries.ts) reflete o estado da API (FR-005)
+      },
+      onError: (error) => {
+        // status permanece; diálogo não reabre sozinho (US4.5)
+        if (handleMutationError(error)) return;
+        setConfirmError(describeActionFailure(failureFromError(error)));
+      },
     });
   }
+
+  const confirmPending =
+    confirmState?.kind === "revoke" ? revokeMutation.isPending : reactivateMutation.isPending;
+
+  // -------------------------------------------------- estados da consulta --
+  if (employeesQuery.isPending) {
+    return (
+      <div className="mx-auto max-w-4xl">
+        <LoadingState label="Carregando funcionários…" />
+      </div>
+    );
+  }
+  if (employeesQuery.isError) {
+    return (
+      <div className="mx-auto max-w-4xl">
+        <div className="flex flex-col items-start gap-3">
+          <ErrorState message={describeActionFailure(failureFromError(employeesQuery.error))} />
+          <Button
+            variant="secondary"
+            onClick={() => {
+              void employeesQuery.refetch();
+            }}
+          >
+            Tentar novamente
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  const employees = employeesQuery.data.items;
+  const total = employeesQuery.data.total;
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between gap-4">
         <div className="flex items-baseline gap-2">
           <h2 className="text-title-1">Funcionários</h2>
-          <span className="text-body text-foreground-muted">
-            {total} no total
-          </span>
+          <span className="text-body text-foreground-muted">{total} no total</span>
         </div>
-        <Button onClick={() => setFormState({ mode: "create" })}>Novo funcionário</Button>
+        <Button onClick={() => setFormState({ mode: "create" })}>
+          <Plus className="h-4 w-4" aria-hidden="true" />
+          Novo funcionário
+        </Button>
       </div>
 
       {employees.length === 0 ? (
@@ -158,11 +216,10 @@ export default function EmployeesView({ employees, total }: EmployeesViewProps) 
           employee={formState.mode === "edit" ? formState.employee : undefined}
           onCreated={(c) => {
             setFormState(null);
-            setCredential(c); // credencial única (FR-008)
+            setCredential(c); // credencial única (FR-008); mutação já invalidou a lista
           }}
           onUpdated={() => {
-            setFormState(null);
-            router.refresh();
+            setFormState(null); // invalidação já reflete na listagem
           }}
           onClose={() => setFormState(null)}
         />
@@ -178,7 +235,7 @@ export default function EmployeesView({ employees, total }: EmployeesViewProps) 
       {confirmState?.kind === "revoke" ? (
         <ConfirmRevocationDialog
           employee={confirmState.employee}
-          pending={isConfirmPending}
+          pending={confirmPending}
           errorMessage={confirmError}
           onConfirm={confirmAction}
           onClose={() => setConfirmState(null)}
@@ -187,7 +244,7 @@ export default function EmployeesView({ employees, total }: EmployeesViewProps) 
       {confirmState?.kind === "reactivate" ? (
         <ConfirmReactivationDialog
           employee={confirmState.employee}
-          pending={isConfirmPending}
+          pending={confirmPending}
           errorMessage={confirmError}
           onConfirm={confirmAction}
           onClose={() => setConfirmState(null)}

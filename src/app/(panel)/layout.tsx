@@ -5,11 +5,16 @@
 
 import { Suspense, type ReactNode } from "react";
 import PanelShell from "@/features/auth/components/PanelShell";
+import QueryProviders from "@/shared/components/QueryProviders";
 
 export default function PanelLayout({ children }: { children: ReactNode }) {
   return (
     <Suspense fallback={<PanelShellFallback />}>
-      <PanelShell>{children}</PanelShell>
+      <PanelShell>
+        {/* Provider transversal do TanStack Query (rodada 2, T003/D10) —
+            envolve as telas client-side do painel (SPE-02..07). */}
+        <QueryProviders>{children}</QueryProviders>
+      </PanelShell>
     </Suspense>
   );
 }

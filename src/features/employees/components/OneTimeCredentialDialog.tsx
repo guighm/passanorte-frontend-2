@@ -9,6 +9,7 @@
 
 import { Dialog } from "@base-ui/react/dialog";
 import { useState } from "react";
+import { Check, Copy } from "lucide-react";
 import Button from "@/shared/components/Button";
 import type { OneTimeCredential } from "@/features/employees/types";
 
@@ -53,6 +54,11 @@ export default function OneTimeCredentialDialog({ credential, onClose }: OneTime
           </p>
           <div className="mt-4 flex items-center justify-end gap-2">
             <Button variant="secondary" onClick={() => void copyCredential()}>
+              {copied ? (
+                <Check className="h-4 w-4" aria-hidden="true" />
+              ) : (
+                <Copy className="h-4 w-4" aria-hidden="true" />
+              )}
               {copied ? "Copiado!" : "Copiar credencial"}
             </Button>
             <Button onClick={onClose}>Concluí</Button>

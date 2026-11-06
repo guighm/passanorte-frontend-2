@@ -1,30 +1,37 @@
 "use client";
 
-// Diálogo de cadastro/edição de funcionário (SPE-02 T012/T017 — D6, um
-// componente para os dois modos). RHF + Zod com limites espelhados do
-// contrato (name 1–200; username 3–100 — FR-006/FR-007): recusa cliente
-// antes do envio. Modo edit envia APENAS os campos alterados (PATCH
-// parcial, FR-009) e avisa que alterar o nome de usuário reemite a
-// credencial de login (clarificação 2026-11-06). Estados de
-// carregamento/erro visíveis e distintos (Princípio V, FR-014); dados
-// digitados preservados em erro (US2.5).
+// Diálogo de cadastro/edição de funcionário (SPE-02 T010/T012 — D6, um
+// componente para os dois modos; rewire REVISÃO 2/D10): validação RHF +
+// Zod espelhando o contrato (name 1–200; username 3–100 — FR-006/FR-007,
+// recusa cliente antes do envio) e envio via useMutation (túnel BFF).
+// Modo edit envia APENAS os campos alterados (PATCH parcial, FR-009) e
+// avisa que alterar o username reemite a credencial de login
+// (clarificação 2026-11-06). Estados de carregamento/erro visíveis e
+// distintos (Princípio V, FR-014); dados digitados preservados em erro
+// (US2.5); sessão encerrada ⇒ login (FR-007).
 
 import { Dialog } from "@base-ui/react/dialog";
-import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import Button from "@/shared/components/Button";
+import { SessionEndedError } from "@/features/auth/api/errors";
 import {
-  createEmployeeAction,
-  updateEmployeeAction,
-} from "@/features/employees/actions";
-import { describeActionFailure } from "@/features/employees/api/messages";
+  useCreateEmployeeMutation,
+  useUpdateEmployeeMutation,
+} from "@/features/employees/api/queries";
+import {
+  describeActionFailure,
+  failureFromError,
+  SESSION_ENDED_PATH,
+} from "@/features/employees/api/messages";
 import { employeeFormSchema, employeeUpdateSchema } from "@/features/employees/types/schemas";
 import type { EmployeeView, OneTimeCredential } from "@/features/employees/types";
 
 export interface EmployeeFormDialogProps {
   mode: "create" | "edit";
   employee?: EmployeeView;
-  /** Sucesso no modo create: credencial para o diálogo único (T013). */
+  /** Sucesso no modo create: credencial para o diálogo único (T013/FR-008). */
   onCreated: (credential: OneTimeCredential) => void;
   /** Sucesso no modo edit. */
   onUpdated: () => void;
@@ -43,8 +50,10 @@ export default function EmployeeFormDialog({
   onUpdated,
   onClose,
 }: EmployeeFormDialogProps) {
+  const router = useRouter();
   const [failure, setFailure] = useState<string | null>(null);
-  const [isPending, startTransition] = useTransition();
+  const createMutation = useCreateEmployeeMutation();
+  const updateMutation = useUpdateEmployeeMutation();
   const {
     register,
     handleSubmit,
@@ -59,6 +68,16 @@ export default function EmployeeFormDialog({
   });
   const usernameValue = watch("username") ?? "";
   const usernameChanged = mode === "edit" && usernameValue.trim() !== (employee?.username ?? "");
+  const isPending = mode === "create" ? createMutation.isPending : updateMutation.isPending;
+
+  function onMutationError(error: unknown): boolean {
+    if (error instanceof SessionEndedError) {
+      router.replace(SESSION_ENDED_PATH); // FR-007 — não é "erro da ação"
+      return true;
+    }
+    setFailure(describeActionFailure(failureFromError(error)));
+    return false;
+  }
 
   function applyIssues(issues: readonly { path: ReadonlyArray<string | number | symbol>; message: string }[]) {
     for (const issue of issues) {
@@ -78,21 +97,20 @@ export default function EmployeeFormDialog({
         applyIssues(parsed.error.issues);
         return;
       }
-      startTransition(async () => {
-        const result = await createEmployeeAction({
-          name: parsed.data.name,
-          username: parsed.data.username,
-        });
-        if (result.ok) {
+      createMutation
+        .mutateAsync({ name: parsed.data.name, username: parsed.data.username })
+        .then((created) => {
+          // credencial única: flui da resposta 201 para o diálogo (D10/SC-002);
+          // a resposta NÃO fica em cache (mutação — Princípio III)
           onCreated({
-            employeeId: result.employeeId,
-            username: result.username,
-            initialPassword: result.initialPassword,
+            employeeId: created.id,
+            username: created.username,
+            initialPassword: created.initialPassword,
           });
-          return;
-        }
-        setFailure(describeActionFailure(result));
-      });
+        })
+        .catch((error: unknown) => {
+          onMutationError(error);
+        });
       return;
     }
     // Modo edit: PATCH parcial — apenas campos alterados (FR-009/D6).
@@ -112,14 +130,12 @@ export default function EmployeeFormDialog({
       applyIssues(parsed.error.issues);
       return;
     }
-    startTransition(async () => {
-      const result = await updateEmployeeAction(employee!.id, parsed.data);
-      if (result.ok) {
-        onUpdated();
-        return;
-      }
-      setFailure(describeActionFailure(result));
-    });
+    updateMutation
+      .mutateAsync({ id: employee!.id, body: parsed.data })
+      .then(() => onUpdated())
+      .catch((error: unknown) => {
+        onMutationError(error);
+      });
   });
 
   return (
