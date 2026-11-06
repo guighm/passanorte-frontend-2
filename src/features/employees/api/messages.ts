@@ -1,33 +1,15 @@
-// Mapeamento de desfechos para mensagens acionáveis de UI em português
-// (SPE-02 FR-014/FR-016 — Princípio V). Client-safe: os erros chegam das
-// mutações TanStack Query (queries.ts) como classes de
-// src/features/auth/api/errors.ts (classificadas pelo túnel/bff.ts) e são
-// mapeados aqui uma única vez. Mensagens técnicas do backend nunca chegam
-// cruas ao operador; a credencial nunca entra neste mapeamento (SC-002).
+// Mapeamento de desfechos da feature employees para mensagens acionáveis
+// (SPE-02 FR-014/FR-016). Mapeamento de classes→falha é TRANSVERSAL em
+// src/shared/lib/api-error.ts (remediação I1 da SPE-03 — Princípio IV);
+// este módulo só adiciona as mensagens pt-BR da feature.
 
-import {
-  ApiRequestError,
-  ApiUnavailableError,
-  AuthorizationDeniedError,
-  ContractViolationError,
-  SessionEndedError,
-} from "@/features/auth/api/errors";
+import type { ActionFailure } from "@/shared/lib/api-error";
 
-export type EmployeeActionKind =
-  | "api"
-  | "denied"
-  | "contract"
-  | "unavailable"
-  | "validation"
-  | "session";
+export type EmployeeActionKind = ActionFailure["kind"];
+export type EmployeeActionFailure = ActionFailure;
 
-export interface EmployeeActionFailure {
-  ok: false;
-  kind: EmployeeActionKind;
-  status?: number;
-  errorCode?: string;
-  message: string;
-}
+export { failureFromError } from "@/shared/lib/api-error";
+export const SESSION_ENDED_PATH = "/login?reason=session-expired";
 
 /** Erro desconhecido do backend — mensagem genérica acionável (nunca
  * "badge inventado"). O probe T005 fixará codes reais; enquanto isso,
@@ -57,34 +39,3 @@ export function describeActionFailure(failure: EmployeeActionFailure): string {
       return "Não foi possível concluir a operação.";
   }
 }
-
-/** Converte o erro lançado por uma mutação TanStack Query (classe
- * classificada pelo túnel/bff.ts) em EmployeeActionFailure — a sessão
- * encerrada é reconhecida para o fluxo /login (FR-007) sem virar
- * "erro da ação" (Princípio I). */
-export function failureFromError(error: unknown): EmployeeActionFailure {
-  if (error instanceof ApiRequestError) {
-    return {
-      ok: false,
-      kind: error.errorCode === "validation_error" ? "validation" : "api",
-      status: error.status,
-      errorCode: error.errorCode,
-      message: error.backendMessage,
-    };
-  }
-  if (error instanceof AuthorizationDeniedError) {
-    return { ok: false, kind: "denied", message: "Ação não autorizada para o papel da sessão." };
-  }
-  if (error instanceof ContractViolationError) {
-    return { ok: false, kind: "contract", message: error.message };
-  }
-  if (error instanceof ApiUnavailableError) {
-    return { ok: false, kind: "unavailable", message: error.message };
-  }
-  if (error instanceof SessionEndedError) {
-    return { ok: false, kind: "session", message: "Sessão encerrada." };
-  }
-  return { ok: false, kind: "api", message: "Falha inesperada ao falar com a API." };
-}
-
-export const SESSION_ENDED_PATH = "/login?reason=session-expired";

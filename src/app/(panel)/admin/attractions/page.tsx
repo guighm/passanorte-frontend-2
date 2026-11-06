@@ -1,19 +1,19 @@
-// Placeholder da seção admin/attractions — definida na SPE-03 (SPE-01 US2 T019,
-// estático por análise E1). Acesso exclusivo do administrador (RF03).
-import PlaceholderSection from "@/shared/components/PlaceholderSection";
+// Página fina da área de pontos turísticos (SPE-03 T009 — padrão SPE-02):
+// Server Component mínimo renderizando o AttractionsView client — leitura/
+// mutações client-side via TanStack Query + túnel BFF (research D1).
+// Acesso exclusivo do administrador: guardas da SPE-01 em src/proxy.ts
+// cobrem /admin/* (FR-001, research D9 — sem duplicação).
 
-export default function AdminPage() {
+import AttractionsView from "@/features/attractions/components/AttractionsView";
+
+export default function AdminAttractionsPage() {
   return (
-    <div className="mx-auto max-w-4xl">
-      <PlaceholderSection
-        title="Pontos Turísticos"
-        description="Seção administrativa com implementação definida na spec correspondente."
-        spec="SPE-03"
-      />
+    <div className="mx-auto max-w-5xl">
+      <AttractionsView />
     </div>
   );
 }
 
 export const metadata = {
-  title: "Pontos Turísticos — PassaNorte",
+  title: "Pontos turísticos — PassaNorte",
 };

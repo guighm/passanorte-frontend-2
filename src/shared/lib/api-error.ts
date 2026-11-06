@@ -7,7 +7,13 @@
 // errorCode "validation_error". 401/403 NÃO passam aqui: já
 // classificados pelos callers (SessionEndedError/AuthorizationDeniedError).
 
-import { ApiRequestError, ApiUnavailableError } from "@/features/auth/api/errors";
+import {
+  ApiRequestError,
+  ApiUnavailableError,
+  AuthorizationDeniedError,
+  ContractViolationError,
+  SessionEndedError,
+} from "@/features/auth/api/errors";
 
 /** Valida o corpo e devolve o erro classificado — ou null quando o corpo
  * não é nem ApiError nem HTTPValidationError (caller lança o fallback). */
@@ -58,4 +64,54 @@ export async function classifyApiErrorResponse(
     throw classified;
   }
   throw new ApiUnavailableError(`HTTP ${response.status} em ${displayPath}`);
+}
+
+// -------------------------------------------------------------- falhas --
+
+/** Kinds compartilhados de desfecho de ação (remediação I1 do
+ * /speckit-analyze da SPE-03): o mapeamento de classes de erro → falha é
+ * transversal (Princípio IV) — os `messages.ts` de cada feature só
+ * adicionam suas mensagens pt-BR específicas via `describeActionFailure`. */
+export type ActionFailureKind =
+  | "api"
+  | "denied"
+  | "contract"
+  | "unavailable"
+  | "validation"
+  | "session";
+
+export interface ActionFailure {
+  ok: false;
+  kind: ActionFailureKind;
+  status?: number;
+  errorCode?: string;
+  message: string;
+}
+
+/** Converte erro de mutação (classe classificada pelo túnel/bff/http) em
+ * ActionFailure — SESSION (sessão encerrada) é reconhecida para o fluxo
+ * /login (FR-007), nunca como "erro da ação". */
+export function failureFromError(error: unknown): ActionFailure {
+  if (error instanceof ApiRequestError) {
+    return {
+      ok: false,
+      kind: error.errorCode === "validation_error" ? "validation" : "api",
+      status: error.status,
+      errorCode: error.errorCode,
+      message: error.backendMessage,
+    };
+  }
+  if (error instanceof AuthorizationDeniedError) {
+    return { ok: false, kind: "denied", message: "Ação não autorizada para o papel da sessão." };
+  }
+  if (error instanceof ContractViolationError) {
+    return { ok: false, kind: "contract", message: error.message };
+  }
+  if (error instanceof ApiUnavailableError) {
+    return { ok: false, kind: "unavailable", message: error.message };
+  }
+  if (error instanceof SessionEndedError) {
+    return { ok: false, kind: "session", message: "Sessão encerrada." };
+  }
+  return { ok: false, kind: "api", message: "Falha inesperada ao falar com a API." };
 }
