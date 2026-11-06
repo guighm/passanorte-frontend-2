@@ -20,12 +20,12 @@ export default function PlaceholderSection({
       className="rounded-lg border border-dashed border-border bg-surface p-6"
     >
       <header className="flex items-baseline justify-between gap-3">
-        <h2 className="text-lg font-semibold text-foreground">{title}</h2>
-        <span className="font-mono text-xs text-foreground-muted">{spec}</span>
+        <h2 className="text-title-2 text-foreground">{title}</h2>
+        <span className="text-code text-foreground-muted">{spec}</span>
       </header>
-      <p className="mt-2 text-sm text-foreground-muted">
+      <p className="text-body mt-2 text-foreground-muted">
         {description} Esta seção estática fica completa quando a spec{" "}
-        <span className="font-mono text-xs">{spec}</span> integrar a API.
+        <span className="text-code">{spec}</span> integrar a API.
       </p>
     </section>
   );

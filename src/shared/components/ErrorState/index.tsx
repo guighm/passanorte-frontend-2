@@ -13,10 +13,10 @@ export default function ErrorState({
   return (
     <div
       role="alert"
-      className="flex flex-col gap-1 rounded-md bg-danger-soft px-3 py-3 text-sm text-danger-soft-foreground"
+      className="text-body flex flex-col gap-1 rounded-md bg-danger-soft px-3 py-3 text-danger-soft-foreground"
     >
-      <span className="font-medium">{message}</span>
-      {detail ? <span className="font-mono text-xs opacity-80">{detail}</span> : null}
+      <span className="text-title-4">{message}</span>
+      {detail ? <span className="text-code opacity-80">{detail}</span> : null}
     </div>
   );
 }

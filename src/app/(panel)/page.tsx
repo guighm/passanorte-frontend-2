@@ -36,13 +36,13 @@ const SECTIONS = [
 export default function PanelHomePage() {
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-4">
-      <h1 className="text-xl font-semibold text-foreground">
+      <h1 className="text-title-1 text-foreground">
         Painel administrativo
       </h1>
-      <p className="text-sm text-foreground-muted">
+      <p className="text-body text-foreground-muted">
         As seções do painel chegam nas specs seguintes; os componentes de
         estado (carregamento, vazio e erro) já são transversais em
-        <span className="font-mono"> src/shared/components</span>.
+        <span className="text-body font-mono"> src/shared/components</span>.
       </p>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {SECTIONS.map((section) => (

@@ -7,7 +7,7 @@ interface EmptyStateProps {
 
 export default function EmptyState({ message = "Nenhum registro por aqui." }: EmptyStateProps) {
   return (
-    <p role="status" className="rounded-md bg-surface-muted px-3 py-4 text-sm text-foreground-muted">
+    <p role="status" className="text-body rounded-md bg-surface-muted px-3 py-4 text-foreground-muted">
       {message}
     </p>
   );

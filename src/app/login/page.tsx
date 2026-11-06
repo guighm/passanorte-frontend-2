@@ -22,8 +22,8 @@ export default function LoginPage({
   return (
     <main className="flex min-h-dvh flex-col items-center justify-center bg-background p-6">
       <div className="w-full max-w-sm rounded-lg border border-border bg-surface p-8 shadow-[var(--shadow-overlay)]">
-        <h1 className="text-2xl font-semibold text-foreground">PassaNorte</h1>
-        <p className="mt-1 mb-6 text-sm text-foreground-muted">
+        <h1 className="text-title-1 text-foreground">PassaNorte</h1>
+        <p className="text-body mt-1 mb-6 text-foreground-muted">
           Painel administrativo — entre com as credenciais geradas pelo sistema.
         </p>
         <Suspense fallback={<LoginFormFallback />}>
@@ -66,7 +66,7 @@ async function LoginPanel({
       {sessionEnded ? (
         <p
           role="status"
-          className="mb-4 rounded-md bg-info-soft px-3 py-2 text-sm text-info-soft-foreground"
+          className="text-body mb-4 rounded-md bg-info-soft px-3 py-2 text-info-soft-foreground"
         >
           Sua sessão foi encerrada. Acesse novamente para continuar.
         </p>

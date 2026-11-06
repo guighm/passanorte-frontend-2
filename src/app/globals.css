@@ -11,6 +11,13 @@
    insígnias); mono tipográfico para dados duros (lat/long, códigos de
    resgate, valores). Vermelho indica irreversível (remoção, erro de API).
 
+   Tipografia (SPE-002): família ratificada em src/app/layout.tsx (ÚNICO
+   ponto de decisão — FR-003); escala canônica tokenizada em @theme inline
+   abaixo (--text-*: display, title-1..6, body, caption, code), com
+   enforcement FR-006 (--text-*: initial desativa utilitários default).
+   Regras de uso por contexto: specs/002-typography-foundation/
+   contracts/ui-contract.md + resumo junto ao bloco de tokens.
+
    Semântica de status (amarrada aos requisitos):
    - RF15 status do ponto:     aberto → success | temporariamente fechado
      → warning | fechado permanentemente → danger
@@ -244,6 +251,81 @@
 
   --duration-fast: var(--duration-fast);
   --duration-slow: var(--duration-slow);
+
+  /* ---- Tipografia: escala canônica (SPE-002, FR-004) ---------------------
+     Cada token fixa tamanho + altura de linha + peso + tracking de uma vez.
+     Valores fiéis ao censo da superfície (specs/002-typography-foundation
+     /research.md, D4/D5). Regras de uso por contexto (token + modificadores
+     tabular/mono): specs/002-typography-foundation/contracts/ui-contract.md.
+     Cor base por nível aplicada via utilitários de cor (texto normal 4,5:1,
+     texto grande 3:1 — FR-014). display é reserva da SPE-07 (hero +
+     tabular). */
+  /* Enforcement do contrato (SPE-002, ENF-01): a escala default do Tailwind
+     é desativada — qualquer utilitário de tamanho fora da escala canônica
+     deixa de existir no projeto (auditoria "zero ad hoc" é mecânica).
+     Desativar a namespace NÃO remove os tokens declarados abaixo. */
+  --text-*: initial;
+
+  --text-display: 2rem;
+  --text-display--line-height: 2.5rem;
+  --text-display--font-weight: 600;
+  --text-display--letter-spacing: -0.02em;
+
+  --text-title-1: 1.25rem;
+  --text-title-1--line-height: 1.75rem;
+  --text-title-1--font-weight: 600;
+  --text-title-1--letter-spacing: 0em;
+
+  --text-title-2: 1.125rem;
+  --text-title-2--line-height: 1.75rem;
+  --text-title-2--font-weight: 600;
+  --text-title-2--letter-spacing: 0em;
+
+  --text-title-3: 1rem;
+  --text-title-3--line-height: 1.5rem;
+  --text-title-3--font-weight: 600;
+  --text-title-3--letter-spacing: 0em;
+
+  --text-title-4: 0.875rem;
+  --text-title-4--line-height: 1.25rem;
+  --text-title-4--font-weight: 500;
+  --text-title-4--letter-spacing: 0em;
+
+  --text-title-5: 0.875rem;
+  --text-title-5--line-height: 1.25rem;
+  --text-title-5--font-weight: 600;
+  --text-title-5--letter-spacing: 0em;
+
+  --text-title-6: 0.75rem;
+  --text-title-6--line-height: 1rem;
+  --text-title-6--font-weight: 500;
+  --text-title-6--letter-spacing: 0em;
+
+  --text-body: 0.875rem;
+  --text-body--line-height: 1.25rem;
+  --text-body--font-weight: 400;
+  --text-body--letter-spacing: 0em;
+
+  --text-caption: 0.75rem;
+  --text-caption--line-height: 1rem;
+  --text-caption--font-weight: 400;
+  --text-caption--letter-spacing: 0em;
+
+  --text-code: 0.75rem;
+  --text-code--line-height: 1rem;
+  --text-code--font-weight: 400;
+  --text-code--letter-spacing: 0em;
+
+  /* Regras de uso por contexto (FR-012/FR-013) — contrato completo:
+     specs/002-typography-foundation/contracts/ui-contract.md §4.
+     display → hero numérico (SPE-07, + tabular) | title-1 → título de página
+     | title-2 → título de seção/card | title-3 → subtítulo (reserva)
+     | title-4 → rótulo/botão/username/linha de estado | title-5 → wordmark
+     (mono, cor primary) | title-6 → reserva | body → corpo/nav/entrada/
+     feedback (cor de estado troca COR, não métricas) | caption → legenda
+     (reserva) | code → código/tag técnica. Modificadores para qualquer
+     token: tabular-nums (número/tabela) e font-mono (código inline).
+     Ampliação da escala: SOMENTE aqui, nunca valor local (FR-008). */
 }
 
 /* ---- Base ----

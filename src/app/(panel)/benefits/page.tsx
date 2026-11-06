@@ -7,7 +7,7 @@ import PlaceholderSection from "@/shared/components/PlaceholderSection";
 export default function BeneficiosPage() {
   return (
     <div className="mx-auto flex max-w-4xl flex-col gap-4">
-      <h1 className="text-xl font-semibold text-foreground">Benefícios</h1>
+      <h1 className="text-title-1 text-foreground">Benefícios</h1>
       <PlaceholderSection
         title="Concessão de brindes"
         description="Leitura do código único de resgate, conferência e confirmação da concessão."

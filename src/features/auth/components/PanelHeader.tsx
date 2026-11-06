@@ -13,8 +13,8 @@ interface PanelHeaderProps {
 export default function PanelHeader({ operator }: PanelHeaderProps) {
   return (
     <header className="flex items-center justify-between gap-4 border-b border-border bg-surface px-6 py-3">
-      <span className="text-sm text-foreground-muted">
-        <strong className="font-medium text-foreground">{operator.username}</strong>{" "}
+      <span className="text-body text-foreground-muted">
+        <strong className="text-title-4 text-foreground">{operator.username}</strong>{" "}
         · {roleLabel(operator.role)}
       </span>
       <LogoutButton />

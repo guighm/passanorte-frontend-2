@@ -21,7 +21,7 @@ export default function LoginForm({ next }: { next?: string }) {
       {/* FR-011 (T042): destino lembrado pelo guarda; clampado no action. */}
       <input type="hidden" name="next" value={next ?? ""} readOnly />
       <div className="flex flex-col gap-1.5">
-        <label htmlFor="username" className="text-sm font-medium text-foreground">
+        <label htmlFor="username" className="text-title-4 text-foreground">
           Usuário
         </label>
         <input
@@ -30,11 +30,11 @@ export default function LoginForm({ next }: { next?: string }) {
           autoComplete="username"
           required
           disabled={pending}
-          className="h-10 rounded-md border border-border bg-surface px-3 text-sm text-foreground disabled:opacity-60"
+          className="text-body h-10 rounded-md border border-border bg-surface px-3 text-foreground disabled:opacity-60"
         />
       </div>
       <div className="flex flex-col gap-1.5">
-        <label htmlFor="password" className="text-sm font-medium text-foreground">
+        <label htmlFor="password" className="text-title-4 text-foreground">
           Senha
         </label>
         <input
@@ -44,7 +44,7 @@ export default function LoginForm({ next }: { next?: string }) {
           autoComplete="current-password"
           required
           disabled={pending}
-          className="h-10 rounded-md border border-border bg-surface px-3 text-sm text-foreground disabled:opacity-60"
+          className="text-body h-10 rounded-md border border-border bg-surface px-3 text-foreground disabled:opacity-60"
         />
       </div>
 
@@ -55,7 +55,7 @@ export default function LoginForm({ next }: { next?: string }) {
       {state.error ? (
         <p
           role="alert"
-          className="rounded-md bg-danger-soft px-3 py-2 text-sm text-danger-soft-foreground"
+          className="text-body rounded-md bg-danger-soft px-3 py-2 text-danger-soft-foreground"
         >
           {state.error}
         </p>

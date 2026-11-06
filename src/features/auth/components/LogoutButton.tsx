@@ -12,7 +12,7 @@ function PendingButton() {
     <button
       type="submit"
       disabled={pending}
-      className="inline-flex h-9 cursor-pointer items-center rounded-md border border-border bg-surface px-3 text-sm font-medium text-foreground transition-colors duration-[var(--duration-fast)] hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-60"
+      className="inline-flex h-9 cursor-pointer items-center rounded-md border border-border bg-surface px-3 text-title-4 text-foreground transition-colors duration-[var(--duration-fast)] hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-60"
     >
       {pending ? "Saindo…" : "Sair"}
     </button>

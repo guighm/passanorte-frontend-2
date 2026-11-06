@@ -17,7 +17,7 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
 function PanelShellFallback() {
   return (
     <div className="flex min-h-dvh items-center justify-center bg-background">
-      <p className="text-sm text-foreground-muted" role="status">
+      <p className="text-body text-foreground-muted" role="status">
         Carregando painel…
       </p>
     </div>
