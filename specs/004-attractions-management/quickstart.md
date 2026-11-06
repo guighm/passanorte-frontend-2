@@ -12,7 +12,7 @@ túnel BFF — padrão SPE-02). Referências: [contracts/spots-api.md](./contrac
 ```bash
 curl -fsS http://localhost:8010/health    # {"status":"ok","database":"ok"}
 API_BASE_URL=http://localhost:8010        # .env.local (nunca em artefatos)
-NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=<chave>   # opcional — sem: fallback só-coordenadas
+# Mapa: OpenStreetMap via react-leaflet (emenda 2.0.0) — sem chave nem billing
 pnpm dev ; pnpm build && pnpm lint        # sem erros (Constraint 6)
 ```
 
@@ -52,12 +52,12 @@ Login como **administrador** (funcionário verá apenas `/benefits`); abrir
 
 | # | Passo | Esperado |
 | --- | --- | --- |
-| 2.1 | Abrir formulário com catálogo OK e chave de mapa ok | Categorias do catálogo (rótulos pt); mapa carregado centrado no primeiro ponto (ou visão padrão se vazio) |
+| 2.1 | Abrir formulário com catálogo OK | Categorias do catálogo (rótulos pt); mapa OSM carregado centrado no primeiro ponto (ou visão global se vazio) |
 | 2.2 | Marcar posição no mapa | lat/lng preenchidas; digitar coordenadas reposiciona o marcador (SC-004) |
 | 2.3 | Preencher tudo e salvar | Carregamento; ao 201, ponto na listagem (invalidação) |
 | 2.4 | Salvar sem categoria / sem cronograma / horário inválido / coordenada fora de faixa | Recusa cliente junto ao campo, sem envio |
 | 2.5 | Salvar com campo que o backend recusa | Erro acionável no formulário, dados preservados, listagem inalterada |
-| 2.6 | Mapa sem `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` | Fallback: entrada manual de coordenadas + aviso; cadastro segue funcionando |
+| 2.6 | (histórico da rodada Google — removido pela emenda 2.0.0; OSM não exige chave) | — |
 | 2.7 | Catálogo indisponível | Erro no seletor com nova tentativa; nenhuma categoria inventada |
 
 ### US3 — Edição
@@ -91,4 +91,4 @@ Login como **administrador** (funcionário verá apenas `/benefits`); abrir
 - [ ] SC-001…SC-006 confirmados pelos cenários acima
 - [ ] `pnpm build` e `pnpm lint` sem erros
 - [ ] Nenhum dado de cidade/categoria/centro hard-coded (inspeção)
-- [ ] Nenhuma credencial/chave registrada em artefatos ou logs
+- [ ] Nenhuma credencial/chave registrada em artefatos ou logs (mapa OSM não usa chave)

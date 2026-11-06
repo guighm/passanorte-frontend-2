@@ -1,22 +1,25 @@
 "use client";
 
-// SpotMapPicker (SPE-03 T010 — UMA ÚNICA integração de mapa do painel,
-// Constraint 3 da constituição, com a lib sancionada e instalada
-// @vis.gl/react-google-maps — decisão do owner): interface mínima p/
-// reuso pela SPE-07. APIProvider exige `apiKey` — sempre via env
-// NEXT_PUBLIC_GOOGLE_MAPS_API_KEY (Princípio III; chave NUNCA em código).
-// Clique no mapa define a posição (MapMouseEvent.detail.latLng —
-// confirmado nos tipos, T001/`Map.onClick`). Sem chave: fallback
-// acessível (aviso + campos manuais do formulário — nunca crash).
-// Centro inicial (FR-009/clarificação): posição informada em edição; em
-// cadastro, primeiro ponto da listagem (`fallbackCenter`) — sem dados,
-// visão padrão da lib; NADA fixado no código (RNF06).
-//
-// Entrada manual de coordenadas (FR-009) vive no SpotFormDialog — este
-// componente só complementa (bidirecional via props/onChange).
+// SpotMapPicker — UMA ÚNICA integração de mapa do painel (Constraint 3,
+// emenda 2.0.0 da constituição de 2026-11-06, decisão do owner): migrada de
+// Google Maps para **OpenStreetMap via react-leaflet 5 / leaflet 1.9** —
+// zero custo, sem chave de API e sem billing (RNF15; o Google exigia
+// pré-pago de R$200 na billing brasileira). Interface de props PRESERVADA —
+// SPE-07 (heatmap RF06) reusa este componente.
+// Clique no mapa define a posição; digitar as coordenadas no formulário
+// posiciona o marcador (bidirecional — SC-004, FR-009). Centro inicial
+// (clarificação): posição informada em edição; em cadastro, primeiro ponto
+// da listagem (`fallbackCenter`) — sem dados, visão padrão global (NADA
+// fixado no código, RNF06). Sem SSR: leaflet exige `window` — o mapa
+// renderiza após mount com skeleton anunciável (Princípio V).
 
-import { APIProvider, Map, Marker, useApiLoadingStatus } from "@vis.gl/react-google-maps";
-import { useMemo } from "react";
+import { useMemo, useSyncExternalStore } from "react";
+import L from "leaflet";
+import { MapContainer, Marker, TileLayer, useMapEvents } from "react-leaflet";
+import "leaflet/dist/leaflet.css";
+import markerIconPng from "leaflet/dist/images/marker-icon.png";
+import markerIcon2xPng from "leaflet/dist/images/marker-icon-2x.png";
+import markerShadowPng from "leaflet/dist/images/marker-shadow.png";
 
 export interface SpotMapPickerProps {
   latitude: number | null;
@@ -26,67 +29,68 @@ export interface SpotMapPickerProps {
   onChange: (latitude: number, longitude: number) => void;
 }
 
-export default function SpotMapPicker({ latitude, longitude, fallbackCenter, onChange }: SpotMapPickerProps) {
-  const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY as string | undefined;
+let markerIcon: L.Icon | null = null;
+
+function spotMarkerIcon(): L.Icon {
+  // Ícones servidos pelo próprio bundle via import (sem CDN — Princípio III);
+  // resolve o clássico "default marker icon asset" quebrado em bundlers.
+  if (!markerIcon) {
+    markerIcon = L.icon({
+      iconUrl: String(markerIconPng),
+      iconRetinaUrl: String(markerIcon2xPng),
+      shadowUrl: String(markerShadowPng),
+      iconSize: [25, 41],
+      iconAnchor: [12, 41],
+      popupAnchor: [1, -34],
+    });
+  }
+  return markerIcon;
+}
+
+/** "Subscrição" vazia — o useSyncExternalStore só diferencia
+ * server/client snapshot (detecção de hidratação, sem fonte externa). */
+const subscribeNoop = () => () => {};
+
+/** Captura cliques no mapa (react-leaflet: handlers via useMapEvents). */
+function ClickHandler({ onChange }: { onChange: (lat: number, lng: number) => void }) {
+  useMapEvents({
+    click(event) {
+      onChange(event.latlng.lat, event.latlng.lng);
+    },
+  });
+  return null;
+}
+
+export default function SpotMapPicker({
+  latitude,
+  longitude,
+  fallbackCenter,
+  onChange,
+}: SpotMapPickerProps) {
+  // Leaflet usa `window` em init — renderiza só pós-hidratação, com o
+  // padrão canônico `useSyncExternalStore` (server snapshot = false ⇒
+  // skeleton anunciável no SSR; re-render pós-hidratação sem mismatch —
+  // Princípio V; o lint react-hooks rejeita setState-em-effect aqui).
+  const mounted = useSyncExternalStore(
+    subscribeNoop,
+    () => true,
+    () => false,
+  );
 
   const center = useMemo(() => {
     if (latitude !== null && longitude !== null) return { lat: latitude, lng: longitude };
     if (fallbackCenter) return { lat: fallbackCenter.latitude, lng: fallbackCenter.longitude };
-    return null; // sem dados: visão padrão da lib (nada fixado)
+    // Sem centro conhecido (catálogo vazio): visão padrão GLOBAL {0,0} —
+    // default da biblioteca, NÃO é dado de cidade (RNF06).
+    return { lat: 0, lng: 0 };
   }, [latitude, longitude, fallbackCenter]);
 
-  if (!apiKey) {
-    return (
-      <div
-        role="note"
-        className="text-body rounded-md bg-warning-soft px-3 py-2 text-warning-soft-foreground"
-      >
-        Mapa indisponível nesta instalação (sem chave do Google Maps configurada).
-        Defina a localização digitando a latitude/longitude abaixo.
-      </div>
-    );
-  }
+  const zoom = latitude !== null && longitude !== null ? 15 : fallbackCenter ? 13 : 1;
 
-  return (
-    <APIProvider apiKey={apiKey}>
-      <ApiLoadedGate latitude={latitude} longitude={longitude} center={center} onChange={onChange} />
-    </APIProvider>
-  );
-}
+  const position =
+    latitude !== null && longitude !== null ? { lat: latitude, lng: longitude } : undefined;
 
-/** Estados do carregamento da API do Google sob o APIProvider
- * (`useApiLoadingStatus` — deve viver SOB o APIProvider): skeleton
- * anunciável enquanto carrega; falha (ex.: billing não habilitado,
- * AUTH_FAILURE) ⇒ estado de ERRO distinto com fallback p/ coordenadas
- * manuais — nunca "carregando" infinito (Princípio V; bug revelado pelo
- * BillingNotEnabledMapError). */
-function ApiLoadedGate({
-  latitude,
-  longitude,
-  center,
-  onChange,
-}: {
-  latitude: number | null;
-  longitude: number | null;
-  center: { lat: number; lng: number } | null;
-  onChange: (latitude: number, longitude: number) => void;
-}) {
-  const status = useApiLoadingStatus();
-  if (status === "FAILED" || status === "AUTH_FAILURE") {
-    return (
-      <div
-        role="alert"
-        className="text-body flex h-72 flex-col justify-center gap-2 rounded-md bg-warning-soft px-3 text-warning-soft-foreground"
-      >
-        <span className="text-title-4">Mapa indisponível ({status}).</span>
-        <span>
-          O Google não carregou o mapa para esta chave (ex.: billing não habilitado no projeto).
-          Defina a localização digitando a latitude/longitude abaixo.
-        </span>
-      </div>
-    );
-  }
-  if (status === "NOT_LOADED" || status === "LOADING") {
+  if (!mounted) {
     return (
       <div role="status" aria-busy="true" className="flex h-72 flex-col gap-2 rounded-md border border-border p-3">
         <div className="h-3 w-2/3 animate-pulse rounded bg-surface-muted" />
@@ -95,25 +99,36 @@ function ApiLoadedGate({
       </div>
     );
   }
-  // Sem centro conhecido (catálogo vazio e sem coordenada): visão padrão
-  // GLOBAL {0,0}/zoom 1 — default da biblioteca, NÃO é dado de cidade
-  // (RNF06); o picker segue funcional (clique/digitação). A lib EXIGE
-  // `center`+`zoom` (erro "component is missing configuration" se ausentes).
-  const effectiveCenter = center ?? { lat: 0, lng: 0 };
+
   return (
     <div className="h-72 w-full overflow-hidden rounded-md border border-border">
-      <Map
+      <MapContainer
         className="h-full w-full"
-        center={effectiveCenter}
-        zoom={center ? 13 : 1}
-        gestureHandling="greedy"
-        onClick={(event) => {
-          const latLng = event.detail.latLng;
-          if (latLng) onChange(latLng.lat(), latLng.lng());
-        }}
+        center={[center.lat, center.lng]}
+        zoom={zoom}
+        scrollWheelZoom
+        style={{ height: "100%", width: "100%" }}
       >
-        {latitude !== null && longitude !== null ? <Marker position={{ lat: latitude, lng: longitude }} /> : null}
-      </Map>
+        {/* Tiles OpenStreetMap — gratuitos, sem chave; attribution legal obrigatória */}
+        <TileLayer
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+        />
+        <ClickHandler onChange={onChange} />
+        {position ? (
+          <Marker
+            position={position}
+            icon={spotMarkerIcon()}
+            draggable
+            eventHandlers={{
+              dragend: (event) => {
+                const latLng = (event.target as L.Marker).getLatLng();
+                onChange(latLng.lat, latLng.lng);
+              },
+            }}
+          />
+        ) : null}
+      </MapContainer>
     </div>
   );
 }

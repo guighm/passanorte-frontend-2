@@ -19,7 +19,9 @@
   ativa. Categoria: filtro client-side sobre a página carregada (limitação
   registrada na spec — não compor queryKey com ela).
 
-## D2. Mapa: `@vis.gl/react-google-maps` 1.10.2 (decisão do owner — "a lib instalada neste projeto")
+## D2. Mapa: `@vis.gl/react-google-maps` 1.10.2 (RODADA 1 — SUPERSEDED pela
+emenda 2.0.0, ver **D12** abaixo; mantida como histórico)
+
 
 - **Decision**: seletor de localização encapsulado num único componente
   **`SpotMapPicker`** (`src/features/attractions/components/SpotMapPicker.tsx`)
@@ -39,8 +41,8 @@
   decisão explícita do owner; SPE-07 (heatmap) reusa o mesmo APIProvider
   /configuração via este componente.
 - **Alternatives considered**:
-  - OpenStreetMap/Leaflet (RNF18 permite "Google Maps ou OSM" — a
-    constituição FIXA Google Maps, Constraint 3: "Não há segunda
+  - OpenStreetMap/Leaflet em 2026-11-06 rodada 1 (RNF18 permite
+    "Google Maps ou OSM" — a constituição então FIXava Google Maps, Constraint 3: "Não há segunda
     integração nem substituição por OSM sem emenda") — rejeitado pela
     constituição.
   - `AdvancedMarker`/`markerClusterer` (exige `mapId`) — rejeitado nesta
@@ -146,3 +148,36 @@
 | D7 | Pendências por probe (weekday/errorCodes) | probe T inicial; compare de contrato no fim |
 | D8 | Erros via bff/api-error/messages | reuso da SPE-02 |
 | D9 | Guardas herdados | sem código novo de RBAC |
+
+---
+
+## D12. Emenda constitucional 2.0.0 — migração do mapa para OpenStreetMap (`react-leaflet`/`leaflet`)
+
+- **Contexto**: com billing real exigida pelo Google (pré-pago de R$200 na
+  billing brasileira), o owner decidiu (2026-11-06) migrar para OSM —
+  alternativa gratuita e open source prevista desde o RNF18 ("Google Maps
+  ou OSM"). **Emenda MAJOR 2.0.0** da constituição (Constraint 3 redefinida
+  incompativelmente): `@vis.gl/react-google-maps` desinstalada;
+  `react-leaflet` 5 + `leaflet` 1.9 (+ `@types/leaflet`) sancionadas; cópia
+  `docs/CONSTITUTION.md` sincronizada.
+- **Decision**: `SpotMapPicker` reescrito com **interface de props
+  PRESERVADA** (`{latitude, longitude, fallbackCenter, onChange}` — SPE-07
+  herda sem mudanças): `MapContainer` + `TileLayer` OSM (tiles gratuitos
+  com attribution legal) + `Marker` (ícone do próprio bundle, sem CDN) +
+  `useMapEvents({ click })` e `Marker draggable/dragend`; **sem SSR**
+  (leaflet exige `window` — render pós-mount com skeleton anunciável,
+  Princípio V); centro inicial/zoom idênticos à rodada Google
+  (edição = posição atual; cadastro = primeiro ponto; fallback global).
+- **Alternatives considered**: manter fallback manual sem mapa (rejeitado —
+  perder UX com alternativa gratuita disponível); MapLibre (mais
+  configuração para o mesmo ganho); Google iframe embed sem chave
+  (não é picker).
+- **Princípios preservados**: RNF15 (grátis), RNF18 (OSM previsto),
+  Princípio III (nada de chave; ícones via bundle, attribution legal
+  mantida), Constraint 3 (uma única integração, reuso na SPE-07).
+
+**Resumo de decisões — atualizado:**
+
+| # | Decisão | Impacto |
+| --- | --- | --- |
+| D12 (novo) | OSM/react-leaflet conforme emenda 2.0.0 | SpotMapPicker migrado; SPE-07 OSM |

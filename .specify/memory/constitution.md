@@ -1,7 +1,28 @@
 <!--
   Sync Impact Report
   ==================
-  Version change: 1.2.0 → 1.2.1
+  Version change: 1.2.1 → 2.0.0
+  Modified constraints: 3 (Mapas) — REDEFINIDA INCOMPATIVELMENTE: a integração
+    de mapa do painel migra de Google Maps (@vis.gl/react-google-maps) para
+    **OpenStreetMap via react-leaflet/leaflet** (decisão do owner em
+    2026-11-06, registrada como clarificação da SPE-03): o Google exige
+    billing habilitada com pré-pago (R$200 na billing brasileira), conflitando
+    com RNF15 (caráter acadêmico, sem orçamento); OSM é gratuito/open source e o
+    RNF18 já previa "Google Maps ou OSM". `@vis.gl/react-google-maps` REMOVIDA
+    da lista sancionada da Constraint 1 (dependência desinstalada); react-leaflet
+    + leaflet sancionadas. SpotMapPicker (SPE-03) migrou com a MESMA interface de
+    props — SPE-07 (heatmap RF06) consome a integração OSM normalmente.
+  Added sections: (none)
+  Removed sections: (none)
+  Follow-up TODOs: (none)
+  Motivo da emenda: custo real de infraestrutura do Google Maps vs alternativa
+    gratuita equivalente no projeto (RNF15) — redefinição incompatível da
+    Constraint 3 ⇒ bump MAJOR (2.0.0).
+  Histórico: 1.2.0 → 1.2.1 (2026-11-01) — re-visão da constituição contra a
+    estrutura real de src/ e o package.json em 2026-11-01 confirmou a emenda
+    1.2.0 (dependências e módulos auth/shared conferem); único elemento ausente
+    era o mapa de rotas do App Router, acrescentado ao Princípio IV
+    (esclarecimento → PATCH).
   Modified principles: IV (agora cita também o mapa de rotas do App Router:
     route group `(panel)` com admin/{dashboard,attractions,events,tours,employees}
     e benefits, mais `login/` e o túnel BFF `src/app/api/proxy/[...path]`;
@@ -111,7 +132,7 @@ backend são exibidas uma única vez, com aviso claro de não-reexibição (SPE-
    (estado de cliente), lucide-react (ícones), class-variance-authority
    (variantes de componente), react-error-boundary, `cn` (merge de class names
    Tailwind, substituto de clsx + tailwind-merge, reexposto em
-   `src/shared/lib/cn.ts`), `@vis.gl/react-google-maps` (mapas, Constraint 3).
+   `src/shared/lib/cn.ts`), `react-leaflet` + `leaflet` (mapas OSM, Constraint 3).
    Versões do `package.json`
    são a referência; nova dependência exige justificativa no artefato Spec Kit e
    preferência por opção gratuita/open source (Princípio III).
@@ -119,10 +140,15 @@ backend são exibidas uma única vez, com aviso claro de não-reexibição (SPE-
    guias em `node_modules/next/dist/docs/` (`AGENTS.md`): APIs e convenções
    divergem de versões antigas do framework; APIs marcadas como deprecated
    **NÃO** devem ser usadas.
-3. **Mapas:** integração **Google Maps via `@vis.gl/react-google-maps`**
-   (RNF18), definida uma única vez (SPE-03) e reusada pelo Dashboard (SPE-07);
-   chave apenas via variável de ambiente (Princípio III). Não há segunda
-   integração nem substituição por OSM sem emenda desta constituição.
+3. **Mapas:** integração **OpenStreetMap via `react-leaflet` + `leaflet`**
+   (RNF18 — "Google Maps ou OSM"), definida uma única vez (SPE-03,
+   `SpotMapPicker`) e reusada pelo Dashboard (SPE-07); bibliotecas
+   gratuitas e open source, **sem chave de API nem billing** (RNF15 —
+   decisão do owner em 2026-11-06 em detrimento do pré-pago do Google
+   Maps); assets de ícone/marker do pacote servidos pelo próprio bundle,
+   sem CDN. Nenhuma segunda integração de mapa, nenhuma fonte de tiles
+   paga por chave, e nenhuma reversão ao Google Maps sem emenda desta
+   constituição.
 4. **Gráficos:** restritos ao Dashboard (SPE-07). Nenhuma biblioteca de gráficos
    está instalada; a escolha (client-side, compatível com React 19) é feita uma
    única vez no plan da SPE-07 e sancionada aqui por emenda, se necessário.
@@ -169,4 +195,4 @@ backend são exibidas uma única vez, com aviso claro de não-reexibição (SPE-
   Constraints 1–6 são checados contra os artefatos (spec.md, plan.md,
   tasks.md) e contra o código entregue.
 
-**Version**: 1.2.1 | **Ratified**: 2026-10-30 | **Last Amended**: 2026-11-01
+**Version**: 2.0.0 | **Ratified**: 2026-10-30 | **Last Amended**: 2026-11-06

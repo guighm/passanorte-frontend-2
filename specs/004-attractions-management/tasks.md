@@ -169,3 +169,15 @@ US2 cadastro, US3 edição, US4 remoção — P1/P1/P2/P2 da spec).
 - `SpotMapPicker` é a única integração de mapa (Constraint 3): SPE-07 reusa; nenhuma segunda lib de mapa
 - Commit após cada task ou grupo lógico
 - Parar em qualquer checkpoint para validar a story isoladamente
+
+---
+
+## Phase 8: Convergence (Emenda constitucional 2.0.0 — migração de mapa para OSM)
+
+**Purpose**: aplicar a decisão do owner (2026-11-06) — migração Google Maps → OpenStreetMap com emenda MAJOR 2.0.0 da constituição (custo: Google exige billing pré-paga; RNF15)
+
+- [x] T026 Executar a emenda da constituição (MAJOR 2.0.0): Constraint 3 redefinida (OpenStreetMap via `react-leaflet`+`leaflet`, sem chave/billing; Google removido da Constraint 1 — `@vis.gl/react-google-maps` desinstalada), Sync Impact Report atualizado, cópia `docs/CONSTITUTION.md` sincronizada (`.specify/memory/constitution.md`) per clarificação 2026-11-06 (contradicts — supersedes Constraint 3 rodada 1)
+- [x] T026b Instalar dependências sancionadas: `pnpm add react-leaflet leaflet` (5.0.0/1.9.4, React 19 ok) + `-D @types/leaflet`; `pnpm remove @vis.gl/react-google-maps` per plan: emenda 2.0.0 (missing)
+- [x] T026c Reescrever `src/features/attractions/components/SpotMapPicker.tsx` com react-leaflet PRESERVANDO a interface de props `{latitude, longitude, fallbackCenter, onChange}` (SPE-07 herda): `MapContainer`+`TileLayer` OSM (attribution legal) + `Marker` do bundle (ícones do pacote, sem CDN) + `useMapEvents({click})` + `Marker draggable/dragend`; sem SSR (render pós-mount com skeleton — Princípio V); visão global padrão quando catálogo vazio per plan: emenda 2.0.0 (missing)
+- [x] T026d Atualizar artefatos da SPE-03 para a emenda (spec: nota de escopo/assumptions/clarificação; plan: deps/constituição check/constraints/research D2 superseded + D12; quickstart: cenários de mapa sem chave) per plan: emenda 2.0.0 (partial)
+

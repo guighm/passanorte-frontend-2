@@ -9,7 +9,7 @@
 Implementar o gerenciamento de pontos turísticos do painel PassaNorte
 (RF11–RF15, alinhado ao RF03): listagem paginada em `DataTable` com filtro
 por status (server-side) e por categoria, cadastro com localização
-selecionável em **mapa Google Maps** (`@vis.gl/react-google-maps` —
+selecionável em **mapa OpenStreetMap** (`react-leaflet`/`leaflet` —
 biblioteca sancionada pela Constraint 3, decisão do owner: integração com a
 lib instalada), categorias do catálogo da API (fonte: interests do turista,
 confirmadas por probe), cronograma por dia da semana com HH:MM, `toleranceRadiusM`
@@ -27,10 +27,8 @@ React 19.3.0 — versões de `package.json` são a referência (Constraint 1).
 
 **Primary Dependencies**: Tailwind CSS 4 (tokens da SPE-08), **TanStack
 Query 5** (queries/mutações, mesmo padrão da SPE-02 rodada 2), TanStack
-Table (via `DataTable` transversal implementado), **`@vis.gl/react-google-maps`
-1.10.2 — única integração de mapa do painel** (APIProvider/Map/Marker
-confirmados nos tipos da lib; chave via `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`,
-Princípio III), lucide-react (ícones D11), React Hook Form + Zod
+Table (via `DataTable` transversal implementado), **`react-leaflet` 5 + `leaflet` 1.9 — única integração de mapa
+(OpenStreetMap, emenda 2.0.0 da constituição)**; zero custo, sem chave/billing, lucide-react (ícones D11), React Hook Form + Zod
 (formulário com limites do contrato: name 1–200, description 1–2000, lat ±90,
 lng ±180, HH:MM, categorias ≥1, dias ≥1), componentes de estado e `Button`
 de `src/shared/components`, Base UI (diálogos/tooltip), `cn`,
@@ -58,12 +56,10 @@ nenhuma tela travada sem feedback (SC-006); mapa com carregamento
 condicionado à existência da chave (`useApiIsLoaded`/lazy).
 
 **Constraints**: nenhuma `fetch` fora de `src/shared/lib` (`bff.ts` client,
-Constraint 5); chave do Google Maps APENAS em `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`
-— nunca em código (Princípio III); **decisão do owner (2026-11-06): sem
-billing do Google nesta fase** — o mapa fica com estado de erro distinto e
-o formulário funciona com coordenadas manuais (fallback já implementado);
-a escolha definitiva do mecanismo de mapa (Google pago vs emenda para OSM)
-fica para ANTES da SPE-07 (heatmap RF06); sem centro de mapa/categoria/cidade
+Constraint 5); mapa OSM **sem chave nem billing** (emenda 2.0.0, decisão
+ do owner 2026-11-06 — `@vis.gl` desinstalada); **emenda 2.0.0 (2026-11-06): OSM via
+react-leaflet** — zero custo, sem chave; sem chave de API em código (não
+existe mais variável de mapa); sem centro de mapa/categoria/cidade
 hard-coded (FR-002, RNF06); enum `SpotStatus` fechado — valor desconhecido
 ⇒ violação explícita (nunca badge inventado); resposta divergente do
 contrato ⇒ `ContractViolationError`; remoção permanente SEMPRE com
@@ -86,10 +82,10 @@ de cronograma.
 | --- | --- | --- |
 | I. API como Contrato Único | Contrato REAL registrado em `contracts/spots-api.md`; parsers puros campo a campo (`SpotView`/`SpotListResponse`/`SpotScheduleEntry*`); enum `SpotStatus` fechado; pendências com probe; nenhuma invenção de endpoint (filtro categoria client-side registrado como limitação) | ✅ Pass |
 | II. Backend É a Autoridade | O formulário não decide geofencing (raio é campo do contrato com orientação); status/efeito ao turista é backend; remoção permanente é contrato; túnel apenas transporta; 403 ⇒ estado de erro | ✅ Pass |
-| III. Sessão Segura, Dados Mínimos | Chave do Google Maps apenas via `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY` (nunca em código); token anexado apenas server-side (túnel/`http.ts`); sem dados LGPD nesta área | ✅ Pass |
+| III. Sessão Segura, Dados Mínimos | Nenhuma chave de API de mapa (OSM/open source — emenda 2.0.0; `@vis.gl` desinstalada); token anexado apenas server-side (túnel/`http.ts`); sem dados LGPD nesta área | ✅ Pass |
 | IV. Feature-Based e Portabilidade | `src/features/attractions` com subpastas convencionadas; transversais reusados (`DataTable`, estados, `QueryProviders`, `api-error.ts`, `bff.ts`, `cn`); **mapa definido UMA VEZ** (componente de seletor único — SPE-07 reusa); nenhuma categoria/centro/cidade hard-coded (RNF06); catálogo da API (RNF06/Princípio IV) | ✅ Pass |
 | V. Estados de UI Explícitos | `isPending`/`isError`/vazio/erro distintos na listagem, catálogo e formulário; remoção permanente com confirmação nomeando ponto+efeito; nenhum clique-destrutivo único | ✅ Pass |
-| Constraints 1–6 | Stack conforme `package.json` (zero deps novas; Google Maps sancionado); docs Next 16 + TanStack (Query 5, @vis.gl) consultados em research; chamadas client-side só pelo túnel; build/lint como pronto | ✅ Pass |
+| Constraints 1–6 | Stack conforme `package.json` (react-leaflet/leaflet sancionados pela emenda 2.0.0 — `@vis.gl` REMOVIDA); docs Next 16 + TanStack (Query 5) + react-leaflet consultados; chamadas client-side só pelo túnel; build/lint como pronto | ✅ Pass |
 
 **Gates pós-Phase 1**: reavaliados no fim de `research.md` — única
 ampliação transversal é o **componente de mapa** (`SpotMapPicker` em
@@ -136,7 +132,7 @@ src/
 │       │                        # (catálogo, probe), mutações create/update/delete
 │       ├── components/          # AttractionsView (orquestra tudo),
 │       │                        # SpotFormDialog (create|edit + validação Zod),
-│       │                        # SpotMapPicker (ÚNICA integração de mapa — Constraint 3),
+│       │                        # SpotMapPicker (ÚNICA integração de mapa — Constraint 3, OSM/emenda 2.0.0),
 │       │                        # ScheduleEditor (dias da semana, HH:MM),
 │       │                        # CategorySelector (catálogo da API),
 │       │                        # SpotStatusBadge, RowActions (ícones+tooltip),

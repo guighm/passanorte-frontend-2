@@ -14,8 +14,8 @@
 > genérica de ausência de detalhes técnicos; a referência ao integração de
 > mapa Google Maps segue a Constraint 3 da constituição (definida uma única
 > vez nesta spec, reusada pela SPE-07), e `DataTable`/componentes de estado
-> > (Google Maps segue a Constraint 3 da constituição — definida uma única
-> vez nesta spec, reusada pela SPE-07), e `DataTable`/componentes de estado
+> > (mapa OpenStreetMap segue a Constraint 3 — emenda 2.0.0 de 2026-11-06;
+> definida uma única vez nesta spec, reusada pela SPE-07), e `DataTable`/componentes de estado
 > de `src/shared/components` são reuso sancionado pelo Princípio IV. Demais
 > requisitos e critérios de sucesso permanecem agnósticos de tecnologia.
 
@@ -63,8 +63,11 @@
   e acionável quando billing/auth falham) e a feature funciona 100% com
   digitação manual de coordenadas (FR-009 dá os dois caminhos como
   equivalentes). Não há troca para OSM nesta fase (Constraint 3 exige
-  emenda formal). A DECISÃO DEFINITIVA do mapa (pagar o Google vs emenda
-  para OSM) fica para ANTES da SPE-07 — o heatmap (RF06) depende dela.
+  emenda formal). A DECISÃO DEFINITIVA do mapa ficou para antes da SPE-07 e foi TOMADA no mesmo dia:
+  **emenda 2.0.0 da constituição — migração para OpenStreetMap via
+  `react-leaflet`/`leaflet`** (zero custo, sem chave/billing, RNF15;
+  `@vis.gl/react-google-maps` desinstalada). O SpotMapPicker migrou com
+  interface de props PRESERVADA — SPE-07 (heatmap RF06) já nasce OSM.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -388,12 +391,12 @@ erro acionável sem mudança.
   túnel BFF + TanStack Query (padrão estabelecido na SPE-02), componentes
   transversais (`DataTable`, estados, botões), classificador de erro
   `ApiError` compartilhado e guardas `/admin/*`.
-- **Mapa**: integração de mapa é definida nesta spec conforme Constraint 3
-  (Google Maps via biblioteca sancionada, chave apenas por variável de
-  ambiente); a digitação manual de coordenadas serve de alternativa
-  acessível e de fallback se o mapa não estiver disponível. A escolha de
-  biblioteca específica/parcelas de custo é decisão do plan (dentro da
-  sancionada).
+- **Mapa**: integração de mapa definida nesta spec conforme Constraint 3 —
+  **emenda 2.0.0 (2026-11-06): OpenStreetMap via `react-leaflet`/`leaflet`**
+  (gratuitas/open source, sem chave nem billing); a digitação manual de
+  coordenadas permanece como alternativa acessível e equivalente
+  (FR-009). A troca do Google por OSM foi decisão do owner com emenda
+  formal da constituição.
 - **Remoção física**: o RF12 "remoção" é atendido pelo endpoint DELETE
   permanente (204) — não há desativação como em funcionários; a
   confirmação explícita compensa a irreversibilidade.
