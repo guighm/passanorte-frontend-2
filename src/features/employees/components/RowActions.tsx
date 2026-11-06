@@ -49,11 +49,13 @@ function IconButtonTooltip({
       >
         {icon}
       </Tooltip.Trigger>
-      <Tooltip.Positioner sideOffset={4}>
-        <Tooltip.Popup className="text-body rounded-md bg-foreground px-2 py-1 text-background shadow-sm">
-          {label}
-        </Tooltip.Popup>
-      </Tooltip.Positioner>
+      <Tooltip.Portal>
+        <Tooltip.Positioner sideOffset={4}>
+          <Tooltip.Popup className="text-body rounded-md bg-foreground px-2 py-1 text-background shadow-sm">
+            {label}
+          </Tooltip.Popup>
+        </Tooltip.Positioner>
+      </Tooltip.Portal>
     </Tooltip.Root>
   );
 }
