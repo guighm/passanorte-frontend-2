@@ -81,7 +81,7 @@ emenda 2.0.0, ver **D12** abaixo; mantida como histórico)
   inventar parâmetro de categoria violaria Princípio I. Enriquecimento
   server-side futuro = emenda de contrato.
 
-## D5. Catálogo de categorias (FR-010, clarificação)
+## D5. Catálogo de categorias (FR-010, clarificação) — RESOLVIDO por probe (2026-11-06: formato `{categories:[{key,label}]}`, chaves `leisure`/`gastronomy`/etc., **validadas pelo backend**; parse ajustado em `contract.ts`)
 
 - **Decision**: seletor alimentado por `GET /api/v1/tourists/interest-
   categories` (via túnel, `useSpotCategoriesQuery` — cache próprio
@@ -104,7 +104,7 @@ emenda 2.0.0, ver **D12** abaixo; mantida como histórico)
 - **Rationale**: minimiza duplicação; contratos de create/update diferem
   apenas por nullability.
 
-## D7. Pendências do contrato → probe na implementação
+## D7. Pendências do contrato → RESOLVIDAS por probe (2026-11-06: `weekday` lowercase-inge ("monday"…), 422 = `ApiError` unificado `validation_error` com `details[{key,message}]`, 404 `resource_not_found`)
 
 - **Status**: vocabulário de `weekday` (ex.: "monday" vs "segunda"),
   `errorCode`s (coordenada fora de faixa, 404 em DELETE de removido),

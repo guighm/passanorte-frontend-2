@@ -37,10 +37,11 @@ campos obrigatórios; controles da UI derivam deles (FR-006). Cache por
 ## SpotScheduleEntry (Cronograma)
 
 `{ weekday: string, opensAt: "HH:MM", closesAt: "HH:MM" }` — ao menos 1
-entrada por ponto (create e update re-que resubmitido alterado). Formato
-`HH:MM` puro (sem segundos/fuso); coerência opensAt<closesAt validada na
-UI (edge). Vocabulário exato de `weekday` = pendência do probe (research
-D7); o parse exige string não-vazia.
+entrada por ponto (cronograma resubmitido inteiro quando alterado).
+Formato `HH:MM` puro; coerência opensAt<closesAt validada na UI (edge).
+**Vocabulário CONFIRMADO por probe (2026-11-06): lowercase inglês
+(`"monday"` etc.)** — idêntico às `SPOT_SCHEDULE_WEEKDAY_KEYS` da UI;
+parse exige string não-vazia.
 
 ## SpotStatus (ciclo de vida do status)
 
@@ -61,9 +62,10 @@ D7); o parse exige string não-vazia.
 ## Categoria (catálogo)
 
 Chave administrada pela API; rótulo pt-BR vindo do catálogo
-(`CategoryView {key, label}`). Fonte do seletor: catalog de interesses do
-turista, **correspondência de chaves confirmada por probe obrigatório**
-(research D5; clarificação 2026-11-06). Cada ponto tem ≥1 categoria
+(`CategoryView {key, label}`). Fonte CONFIRMADA por probe (2026-11-06): catálogo de interesses do
+turista (`{categories:[{key,label}]}`, chaves `gastronomy/nature/culture/
+leisure/art/cinema`), e o backend valida as categorias de spots contra
+ele (422 `request_error`). Cada ponto tem ≥1 categoria
 (contrato). Nada de categorias no código (RNF06/SC-005).
 
 ## Mutação (create/update) — validação espelhada

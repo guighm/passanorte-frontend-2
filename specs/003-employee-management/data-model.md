@@ -87,13 +87,13 @@ Corpo de `GET /api/v1/employees` (itens), `GET/PATCH .../{id}`.
                          │                                            │
         POST /{id}/revoke│ (204)                                      │
                          ▼                                            │
-                   [ revogado* ] ◀────────────────────────────────────┘
-                         (valor exato a confirmar por probe — D8)
+                   [ "revoked" ] ◀────────────────────────────────────┘
+                         (valor confirmado por probe, 2026-11-06)
 ```
 
 - Revogação não apaga dados cadastrais (editável em revogado — US3.3).
-- Re-revogar funcionário já revogado: comportamento a confirmar no
-  probe (204 idempotente ou erro — D8); painel reflete o resultado.
+- Re-revogar funcionário já revogado: **204 idempotente** (confirmado por
+  probe, 2026-11-06); painel reflete o resultado.
 - Efeito de sessões vigentes do funcionário revogado é decisão do
   backend (Princípio II); o painel não infere nada.
 - Não existe exclusão física no contrato (FR-013).

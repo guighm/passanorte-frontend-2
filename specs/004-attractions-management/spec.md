@@ -476,15 +476,24 @@ painel apenas informa o desfecho das ações ao operador.
 **Pendências (resolvidas por probe — padrão da SPE-02 T005; não bloqueiam
 o plan, exceto onde indicado)**
 
-- **Catálogo de categorias**: NÃO existe endpoint dedicado de catálogo de
-  categorias de pontos no OpenAPI; **fonte DECIDIDA (clarificação
-  2026-11-06): o catálogo de interesses do turista**
-  (`GET /api/v1/tourists/interest-categories` — exige sessão). Probe
-  obrigatório na implementação (antes das tasks de formulário): confirmar
-  se as chaves de categoria dos spots correspondem às chaves do catálogo
-  (e seus rótulos em português); se não corresponderem, registrar
-  divergência e resolver com o backend ANTES da UI (emenda de contrato;
-  até lá o seletor não pode hard-codificar nada).
+- ~~Catálogo de categorias~~ — **RESOLVIDO por probe (2026-11-06, task
+  T004)**: forma `{ "categories": [ { key, label } ] }`; chaves
+  `gastronomy, nature, culture, leisure, art, cinema` (rótulos pt); a
+  **correspondência é assegurada pelo backend** (categorias fora do
+  catálogo → 422 `request_error`); seletor consome a fonte sem nenhum
+  hard-code (parse em `contract.ts` ajustado ao formato real).
+- ~~Vocabulário de `weekday`~~ — **RESOLVIDO**: lowercase inglês
+  (`"monday"`…) — idêntico às `SPOT_SCHEDULE_WEEKDAY_KEYS` da UI; nenhum
+  ajuste necessário.
+- ~~`status` omitido~~ — **RESOLVIDO**: default do backend é `"open"` (o
+  painel continua enviando `open` explícito).
+- ~~`errorCode`s~~ — **RESOLVIDOS**: coordenada fora de faixa → 422
+  `validation_error` (detalhes `[{key,message}]` — ATENÇÃO: o backend usa
+  o payload unificado `ApiError` também no 422, NÃO o FastAPI
+  `HTTPValidationError`); id inexistente → 404 `resource_not_found`;
+  categoria fora do catálogo → 422 `request_error` (mensagem específica
+  mapeada em `messages.ts`).
+- ~~Formato de timestamps~~ — **RESOLVIDO**: ISO date-time `…Z`.
 - Vocabulário exato de `weekday` no cronograma (chaves usadas pelo
   backend — ex.: inglês lowercase ou PT) — probe; parse exige string
   não-vazia e o formulário usa o vocabulário confirmado.

@@ -126,21 +126,19 @@ export function parseSpotListResponse(body: unknown, endpoint: string): SpotList
 }
 
 /**
- * Catálogo de categorias (fonte: `/tourists/interest-categories` —
- * clarificação 2026-11-06). FORMA EXATA do payload = pendência do probe
- * (T004 — exige sessão); parse interim aceita array direto OU
- * `{ items: [...] }`, cada entrada `{key, label}` (label pode ser null —
- * CategoryView do OpenAPI; exibição faz fallback ao key). Qualquer outro formato é violação.
+ * Catálogo de categorias (fonte: `/tourists/interest-categories`) —
+ * FORMATO CONFIRMADO POR PROBE (2026-11-06, sessão admin real):
+ * `{ "categories": [ { key, label } ] }` — chaves reais:
+ * `gastronomy, nature, culture, leisure, art, cinema` com rótulos pt-BR;
+ * o backend VALIDA as
+ * categorias contra este catálogo (422 `request_error` com categoria
+ * fora dele). Label null permanece aceito (CategoryView permite).
  */
 export function parseCategoryList(body: unknown, endpoint: string): CategoryView[] {
-  const list = Array.isArray(body)
-    ? body
-    : typeof body === "object" && body !== null && Array.isArray((body as Record<string, unknown>).items)
-      ? ((body as Record<string, unknown>).items as unknown[])
-      : null;
-  if (!list) {
-    throw new ContractViolationError(`${endpoint}: payload fora do contrato (esperado lista ou {items: [...]})`);
+  if (typeof body !== "object" || body === null || !Array.isArray((body as Record<string, unknown>).categories)) {
+    throw new ContractViolationError(`${endpoint}: payload fora do contrato (esperado {categories: [...]})`);
   }
+  const list = (body as Record<string, unknown>).categories as unknown[];
   return list.map((entry, index) => {
     if (typeof entry !== "object" || entry === null) throw violation(endpoint, `categories[${index}]`);
     const candidate = entry as Record<string, unknown>;

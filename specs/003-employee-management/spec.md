@@ -481,20 +481,13 @@ reativação.
 **Pendências (a confirmar contra a API — não bloqueiam implementação, são
 registradas aqui e resolvidas em `/speckit-plan` ou no compare obrigatório)**
 
-- Valor exato do campo `status` de um funcionário revogado na `EmployeeView`
-  (o OpenAPI tipa `status` como string livre; apenas `"active"` aparece como
-  constante no PATCH) e valor de `status`/efeito de re-revocar um
-  funcionário já revogado (204 idempotente ou erro) — **resolução decidida
-  (clarificação 2026-11-06): probe na API real, agendado como task T005 no
-  início da implementação** (antes das tasks de UI), revogando
-  um funcionário de teste com sessão de administrador e registrando o valor
-  confirmado nesta seção e no contrato.
-- `errorCode` exato do `ApiError` para nome de usuário duplicado (criação e
-  edição) e para operações sobre `employee_id` inexistente (404 — código
-  observável na API real, não enumerado no OpenAPI desta data).
-- Formato concreto dos timestamps `createdAt`/`updatedAt` no payload real
-  (schema não tipa o campo) — afeta apenas a formatação de exibição na
-  tabela.
+- ~~Valor exato do `status` revogado~~ — **RESOLVIDO por probe (2026-11-06,
+  sessão admin real, task T005)**: `status: "revoked"`; re-revogação → 204
+  idempotente; username duplicado → **409, `errorCode: "conflict"`**; id
+  inexistente → **404, `errorCode: "resource_not_found"`**; timestamps →
+  ISO date-time `…Z`. Registrado em contracts/employees-api.md, types
+  (`EMPLOYEE_STATUS_REVOKED`) e messages — compare concluído (governança 5).
+- Reset/renovação de credencial: **continua inexistente** — limitação.
 - Reset/renovação de credencial (caso "senha inicial perdida"): não existe
   no contrato atual — limitação conhecida; se o backend adicionar, é emenda
   desta spec antes de qualquer uso no painel.

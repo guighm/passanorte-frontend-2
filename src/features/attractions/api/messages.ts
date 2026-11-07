@@ -21,8 +21,13 @@ export function describeActionFailure(failure: ActionFailure): string {
     case "session":
       return "Sessão encerrada.";
     case "api":
-      if (failure.errorCode === "not_found" || /not[_ ]?found|inexistente/i.test(failure.errorCode ?? failure.message)) {
+      // errorCode "resource_not_found" (404) e "request_error" (categoria
+      // fora do catálogo) confirmados por probe (2026-11-06).
+      if (failure.errorCode === "resource_not_found") {
         return "Ponto turístico não encontrado — a listagem será atualizada.";
+      }
+      if (failure.errorCode === "request_error") {
+        return failure.message || "Categoria inválida para o catálogo da API.";
       }
       return failure.message || "Não foi possível concluir a operação.";
     default:

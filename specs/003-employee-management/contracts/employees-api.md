@@ -87,18 +87,17 @@ Campos em **camelCase**.
 - Auditoria das ações (RNF19) é do backend; o painel apenas informa ao
   operador o resultado das ações.
 
-## Pendências (resolvidas por probe — research D8, task T001)
+## Pendências — RESOLVIDAS por probe (2026-11-06, sessão admin real; task T005)
 
-| Pendência | Método de resolução |
+| Pendência | Valor observado (probe) |
 | --- | --- |
-| Valor exato de `status` de funcionário revogado na `EmployeeView` | probe: revogar funcionário de teste com sessão admin e observar |
-| Comportamento de re-revogação (204 idempotente ou erro) | probe: re-enviar revoke sobre o mesmo id |
-| `errorCode` do `ApiError` para username duplicado (criação e edição) | probe: cadastrar/copy com username já existente |
-| `errorCode`/status para `employee_id` inexistente (404) | probe: GET/PATCH/revoke com id inexistente |
-| Formato concreto de `createdAt`/`updatedAt` no payload real | probe: observar payload (afeta apenas exibição) |
-| Reset/renovação de credencial (senha perdida) | **não existe no contrato** — limitação registrada; emenda desta spec antes de qualquer uso no painel |
+| `status` de funcionário revogado | **`"revoked"`** (employee "Probe SPE-02", id 5, revoke → 204) |
+| Re-revogação | **204 idempotente** (revoke re-enviado sobre id revogado ⇒ 204, sem erro) |
+| Username duplicado (criação) | **HTTP 409, `errorCode: "conflict"`, `message: "username already in use"`** |
+| `employee_id` inexistente (GET) | **HTTP 404, `errorCode: "resource_not_found"`, `message: "employee not found"`** |
+| Formato de `createdAt`/`updatedAt` | **ISO date-time com Z** (`2026-11-07T00:00:50.905206Z`) |
+| Reset/renovação de credencial (senha perdida) | **continua inexistente no contrato** — limitação registrada; se o backend adicionar, é emenda desta spec antes de qualquer uso no painel |
 
-> Ao concluir o probe, preencher os valores observados nesta tabela e
-> propagar para: spec.md (seção "Contrato da API"), data-model.md (enum
-> de status) e research.md (D3/D8) — compare campo a campo (governança 5
-> da constituição).
+> Compare campo a campo concluído (governança 5): valores propagados para
+> spec.md (Contrato da API), data-model.md, types (`EMPLOYEE_STATUS_REVOKED
+> = "revoked"`) e messages (`conflict` → mensagem pt-BR de username em uso).

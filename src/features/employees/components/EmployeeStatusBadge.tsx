@@ -1,9 +1,8 @@
 // Badge de status do acesso (SPE-02 T007, FR-011): ativo vs revogado
 // visualmente distintos, com tokens de cor do tema (success/danger soft —
-// globals.css). Valor do status: "active" confirmado pelo contrato;
-// qualquer outro valor exibe "Revogado" no formato interim (research D8) —
-// o probe T005 fixará o valor exato e o parse/badge serão restringidos
-// ao enum confirmado no compare de contrato (T025/Princípio I).
+// globals.css). Valores confirmados por probe (2026-11-06): "active" e
+// "revoked" (contracts/employees-api.md); qualquer valor fora do enum é
+// violação explícita no parse (nunca badge genérico — Princípio I).
 
 import { EMPLOYEE_STATUS_ACTIVE } from "@/features/employees/types";
 import { cn } from "@/shared/lib/cn";

@@ -90,12 +90,23 @@ exceção: 422 (`HTTPValidationError` padrão do FastAPI). Campos em
 - Chave do Google Maps somente em `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`
   (Princípio III) — nunca em código.
 
-## Pendências (resolvidas por probe — não bloqueiam o plan)
+## Pendências — RESOLVIDAS por probe (2026-11-06, sessão admin real; task T004)
 
-| Pendência | Método |
+| Pendência | Valor observado (probe) |
 | --- | --- |
-| Correspondência de chaves do catálogo (interests ↔ spot categories) + rótulos | probe com sessão admin (obrigatório antes das tasks de formulário) |
-| Vocabulário exato de `weekday` (e.g. "monday" vs pt) | probe (criar/ler spot de teste) |
-| `errorCode`s: coordenada fora de faixa, horário inválido, ponto inexistente (404 em DELETE/GET), conflitos | probe |
-| Comportamento de DELETE/GET em id inexistente | probe |
-| Filtro server-side por categoria (query param) | hoje NÃO existe — enriquecimento futuro via emenda de contrato |
+| Catálogo de categorias (fonte: interests) | **`GET /api/v1/tourists/interest-categories` → `{ "categories": [ { key, label } ] }`** — chaves reais: `gastronomy, nature, culture, leisure, art, cinema` (rótulos pt); **correspondência CONFIRMADA**: o backend valida as categorias de spots contra este catálogo (`422 request_error` "invalid category … is not in the configured catalog" para chave fora dele) |
+| Spot criado com chave do catálogo | **201, key `"leisure"` sobrevive intacta** na `SpotView` |
+| Vocabulário de `weekday` | **lowercase inglês** (`"monday"` etc.) — idêntico às `SPOT_SCHEDULE_WEEKDAY_KEYS` da UI |
+| `status` omitido no POST | **default do backend: `"open"`** (e `toleranceRadiusM` começa `null`) |
+| Coordenada fora de faixa (lat 999) | **HTTP 422, `ApiError { errorCode: "validation_error", message: "Request body is invalid.", details: [ { key: "latitude", message: "Input should be less than or equal to 90" } ] }`** — o 422 usa o payload UNIFICADO (não o `HTTPValidationError` do FastAPI!) |
+| Spot/DELETE de id inexistente | **HTTP 404, `errorCode: "resource_not_found"`, `message: "spot not found"`** |
+| Timestamps | **ISO date-time com Z** (`2026-11-07T00:01:10.017732Z`) |
+
+> **Divergência de contrato importante (corrigida no painel):** o OpenAPI
+> documentava 422 como `HTTPValidationError` padrão do FastAPI — em run,
+> o backend responde 422 COM O PAYLOAD UNIFICADO `ApiError` (erro
+> `validation_error`), com `details[]` em pares `{key,message}`. O
+> classificador do painel já mapeava `validation_error` — parse confirmado
+> sem alteração. Compare campo a campo concluído (governança 5).
+
+> Spot de teste **removido** ao fim da sonda (DELETE → 204; sem resíduo).

@@ -101,8 +101,9 @@ Faça login como **administrador** (funcionário verá apenas `/benefits`).
 
 ## Checklist de encerramento
 
-- [ ] Probe de contrato executado; valores registrados em
-      `contracts/employees-api.md`, `data-model.md` e spec
+- [x] Probe de contrato executado (2026-11-06, sessão admin real — task
+      T005); valores em `contracts/employees-api.md`/spec; restante:
+      nenhum (reset de credencial segue inexistente — limitação)
 - [ ] SC-001…SC-006 confirmados pelos cenários acima
 - [ ] `pnpm build` e `pnpm lint` sem erros
 - [ ] Nenhuma credencial/senha em artefatos, logs ou histórico do shell

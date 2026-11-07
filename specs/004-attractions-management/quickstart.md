@@ -86,8 +86,9 @@ Login como **administrador** (funcionário verá apenas `/benefits`); abrir
 
 ## Checklist de encerramento
 
-- [ ] Probe de contrato executado; pendências resolvidas em
-      `contracts/spots-api.md` + `data-model.md` + spec
+- [x] Probe de contrato executado (2026-11-06, sessão admin real — task
+      T004); pendências resolvidas em `contracts/spots-api.md` +
+      `data-model.md` + spec (incl. divergência 422→`ApiError` unificado)
 - [ ] SC-001…SC-006 confirmados pelos cenários acima
 - [ ] `pnpm build` e `pnpm lint` sem erros
 - [ ] Nenhum dado de cidade/categoria/centro hard-coded (inspeção)

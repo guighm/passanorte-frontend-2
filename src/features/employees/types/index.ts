@@ -7,10 +7,10 @@
  * "active" confirmado (constante do PATCH); valor revogado a fixar. */
 export type EmployeeStatus = string;
 
-/** Status fixado pelo probe de contrato (tasks T005). "revoked" é o
- * rascunho interim (D8 — any ≠ "active" ⇒ revogado até confirmação). */
+/** Status fixado pelo probe de contrato (T005, 2026-11-06, sessão admin
+ * real): "active" e "revoked" confirmados (contratos/employees-api.md). */
 export const EMPLOYEE_STATUS_ACTIVE = "active";
-export const EMPLOYEE_STATUS_REVOKED = "revoked"; // interim — T005 confirma
+export const EMPLOYEE_STATUS_REVOKED = "revoked";
 
 /** Corpo de `GET /api/v1/employees` (itens), `GET/PATCH .../{id}` —
  * sem campo de senha em qualquer view. (type alias, não interface: linha
