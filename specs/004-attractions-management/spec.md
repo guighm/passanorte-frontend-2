@@ -56,7 +56,16 @@
   de mapa. Nenhum centro é fixado no código (RNF06): o mapa "aprende" a
   região a partir dos dados da API; a coordenada exata é sempre definida
   pelo administrador (marcador ou digitação).
-- Q: O Google exige billing habilitada (pré-pago de R$200 na billing
+- Q: - Q: O formulário de cadastro/edição de ponto deve ser dividido em etapas
+  (wizard/slides) em vez de um formulário único longo? → A: Option A (decisão
+  do owner, 2026-11-06) — **sim: wizard de 4 etapas** no `SpotFormDialog`
+  (cadastro E edição, mesmo componente): 1) Identificação (nome/descrição);
+  2) Categorias (≥1, catálogo); 3) Localização (mapa + lat/lng + raio de
+  tolerância); 4) Funcionamento (cronograma + status). Validação POR ETAPA
+  antes de avançar (Zod parcial); "Voltar"/"Continuar"; indicador de etapa
+  acessível (aria); erros de backend aparecem na etapa corrente; nada muda
+  no contrato (submit único no fim).
+O Google exige billing habilitada (pré-pago de R$200 na billing
   brasileira) para carregar o mapa — como seguir, dado o RNF15 (caráter
   acadêmico, sem orçamento)? → A: **Manter o fallback manual agora
   (custo zero)**: o mapa permanece integrado (com estado de erro distinto
@@ -290,7 +299,10 @@ erro acionável sem mudança.
   **raio de tolerância opcional em metros** (decisão da clarificação
   2026-11-06), cronograma por dia da semana com horários de
   abertura/fechamento (ao menos um dia) e status de operação (padrão
-  aberto ao público); a UI valida contra as regras do contrato (limites de
+  aberto ao público) — apresentado em **wizard de 4 etapas com validação
+  por etapa** (decisão do owner, clarificação 2026-11-06: 1) Identificação;
+  2) Categorias; 3) Localização; 4) Funcionamento; cadastro e edição); a
+  UI valida contra as regras do contrato (limites de
   tamanho, faixas de coordenadas, formato HH:MM, mínimos de
   categorias/dias) antes do envio (FR-014 sobre erros de backend).
 - **FR-009**: a escolha de localização MUST ser possível em **mapa
