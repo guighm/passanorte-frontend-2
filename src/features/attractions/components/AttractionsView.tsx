@@ -30,7 +30,7 @@ import {
 } from "@/features/attractions/api/messages";
 import SpotStatusBadge, { spotStatusLabel } from "@/features/attractions/components/SpotStatusBadge";
 import SpotFormDialog from "@/features/attractions/components/SpotFormDialog";
-import ConfirmDeleteDialog from "@/features/attractions/components/ConfirmDeleteDialog";
+import ConfirmDeleteDialog from "@/shared/components/ConfirmDeleteDialog";
 import RowActions from "@/features/attractions/components/RowActions";
 import {
   SPOT_STATUSES,
@@ -326,7 +326,13 @@ export default function AttractionsView() {
 
       {deleteState ? (
         <ConfirmDeleteDialog
-          spot={deleteState.spot}
+          title={`Remover ${deleteState.spot.name}?`}
+          description={
+            <>
+              Esta é uma <strong>remoção permanente e irreversível</strong>: o ponto sai do
+              catálogo da cidade, do app do turista e das rotas/dashboard que dependam dele.
+            </>
+          }
           pending={deleteMutation.isPending}
           errorMessage={deleteError}
           onConfirm={confirmDelete}

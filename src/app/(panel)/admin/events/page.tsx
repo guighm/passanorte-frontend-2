@@ -1,15 +1,16 @@
-// Placeholder da seção admin/events — definida na SPE-04 (SPE-01 US2 T019,
-// estático por análise E1). Acesso exclusivo do administrador (RF03).
-import PlaceholderSection from "@/shared/components/PlaceholderSection";
+// Página fina da área de eventos (SPE-04 T010 — padrão attractions page):
+// Server Component mínimo renderizando o EventsView client — leitura/
+// mutações client-side via TanStack Query + túnel BFF (research D1).
+// Acesso exclusivo do administrador: guardas da SPE-01 em src/proxy.ts
+// cobrem /admin/* (FR-001, SPE-01 US2 — sem duplicação). Rotas dedicadas
+// de cadastro/edição (FR-013): /admin/events/new e /admin/events/[eventId]/edit.
 
-export default function AdminPage() {
+import EventsView from "@/features/events/components/EventsView";
+
+export default function AdminEventsPage() {
   return (
-    <div className="mx-auto max-w-4xl">
-      <PlaceholderSection
-        title="Eventos"
-        description="Seção administrativa com implementação definida na spec correspondente."
-        spec="SPE-04"
-      />
+    <div className="mx-auto max-w-5xl">
+      <EventsView />
     </div>
   );
 }
