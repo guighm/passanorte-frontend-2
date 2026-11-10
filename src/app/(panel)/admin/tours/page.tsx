@@ -1,19 +1,22 @@
-// Placeholder da seção admin/tours — definida na SPE-05 (SPE-01 US2 T019,
-// estático por análise E1). Acesso exclusivo do administrador (RF03).
-import PlaceholderSection from "@/shared/components/PlaceholderSection";
+// Página fina da área de rotas turísticas (SPE-05 T012 — padrão das
+// features 03/04): Server Component mínimo renderizando o ToursView
+// client — leitura/mutações client-side via TanStack Query + túnel BFF
+// (research D1). SUBSTITUI o placeholder da SPE-01. Acesso exclusivo do
+// administrador: guardas da SPE-01 em src/proxy.ts cobrem /admin/*
+// (FR-001 — sem duplicação). Rotas dedicadas de cadastro/edição
+// (clarificação Q1): /admin/tours/new e /admin/tours/[routeId]/edit —
+// sem página de detalhe (clarificação da 2ª sessão).
 
-export default function AdminPage() {
+import ToursView from "@/features/tours/components/ToursView";
+
+export default function AdminToursPage() {
   return (
-    <div className="mx-auto max-w-4xl">
-      <PlaceholderSection
-        title="Rotas"
-        description="Seção administrativa com implementação definida na spec correspondente."
-        spec="SPE-05"
-      />
+    <div className="mx-auto max-w-5xl">
+      <ToursView />
     </div>
   );
 }
 
 export const metadata = {
-  title: "Rotas — PassaNorte",
+  title: "Rotas turísticas — PassaNorte",
 };

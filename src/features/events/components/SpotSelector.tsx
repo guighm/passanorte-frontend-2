@@ -19,12 +19,19 @@ interface SpotSelectorProps {
   id?: string;
   /** Mensagem de erro de validação do formulário (após tentativa de envio). */
   errorMessage?: string | null;
+  /**
+   * Ids indisponibilizados no seletor (extensão opcional feita pela
+   * SPE-05 T007 — o construtor de lista de rota impede duplicatas:
+   * item já adicionado fica desabilitado, nunca removido do catálogo).
+   * Nenhum efeito nos usos anteriores (eventos).
+   */
+  excludeIds?: number[];
 }
 
 const SELECT_CLASSES =
   "text-body h-10 rounded-md border border-border bg-surface px-3 text-foreground outline-none focus:border-primary";
 
-export default function SpotSelector({ value, onChange, id, errorMessage }: SpotSelectorProps) {
+export default function SpotSelector({ value, onChange, id, errorMessage, excludeIds }: SpotSelectorProps) {
   const catalog = useSpotCatalogQuery();
 
   if (catalog.isPending) {
@@ -79,11 +86,20 @@ export default function SpotSelector({ value, onChange, id, errorMessage }: Spot
         aria-invalid={errorMessage ? true : undefined}
       >
         <option value="">Selecione o ponto turístico</option>
-        {catalog.spots.map((spot) => (
-          <option key={String(spot.id)} value={String(spot.id)}>
-            {spot.name}
-          </option>
-        ))}
+        {catalog.spots.map((spot) => {
+          const excluded = excludeIds?.includes(spot.id) ?? false;
+          return (
+            <option
+              key={String(spot.id)}
+              value={String(spot.id)}
+              disabled={excluded}
+              title={excluded ? "Ponto já adicionado à lista" : undefined}
+            >
+              {spot.name}
+              {excluded ? " (já adicionado)" : ""}
+            </option>
+          );
+        })}
       </select>
       {errorMessage ? (
         <span className="text-body text-danger" role="alert">
