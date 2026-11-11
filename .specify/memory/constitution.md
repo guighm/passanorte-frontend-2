@@ -1,8 +1,24 @@
 <!--
   Sync Impact Report
   ==================
-  Version change: 1.2.1 → 2.0.0
-  Modified constraints: 3 (Mapas) — REDEFINIDA INCOMPATIVELMENTE: a integração
+  Version change: 2.0.0 → 2.1.0
+  Modified principles: Constraint 1 — dependências `@zxing/browser` 0.2.1 +
+    `@zxing/library` 0.23.0 (peer) sancionadas para o scanner de câmera da
+    concessão de brindes (SPE-06, RF21/RNF18-análogo de leitura): única
+    opção mantida ativamente (última release 2026-07, MIT — alternativas
+    rejeitadas em research D1: html5-qrcode parado desde 2023,
+    BarcodeDetector sem cobertura Firefox/Safari, jsQR só-QR) e com
+    controles explícitos de câmera (IScannerControls) exigidos pelo FR-009
+    (câmera pausada no pós-sucesso). Justificativa no artefato Spec Kit
+    (research D1 + plan Constitution Check) — RNF15 (gratuita/open source).
+  Added sections: (none)
+  Removed sections: (none)
+  Follow-up TODOs: (none)
+  Motivo da emenda: dependência nova exigida pelo RF21 sem substituto na
+    lista sancionada (Constraint 1) — acréscimo à lista existente ⇒ bump
+    MINOR.
+  Histórico: 1.2.1 → 2.0.0 (2026-11-06) — Modified constraints: 3 (Mapas) —
+    REDEFINIDA INCOMPATIVELMENTE: a integração
     de mapa do painel migra de Google Maps (@vis.gl/react-google-maps) para
     **OpenStreetMap via react-leaflet/leaflet** (decisão do owner em
     2026-11-06, registrada como clarificação da SPE-03): o Google exige
@@ -132,7 +148,9 @@ backend são exibidas uma única vez, com aviso claro de não-reexibição (SPE-
    (estado de cliente), lucide-react (ícones), class-variance-authority
    (variantes de componente), react-error-boundary, `cn` (merge de class names
    Tailwind, substituto de clsx + tailwind-merge, reexposto em
-   `src/shared/lib/cn.ts`), `react-leaflet` + `leaflet` (mapas OSM, Constraint 3).
+   `src/shared/lib/cn.ts`), `react-leaflet` + `leaflet` (mapas OSM, Constraint 3),
+   `@zxing/browser` + peer `@zxing/library` (scanner de câmera da concessão de
+   brindes — SPE-06, RF21; MIT, controles de pausa exigidos pelo FR-009).
    Versões do `package.json`
    são a referência; nova dependência exige justificativa no artefato Spec Kit e
    preferência por opção gratuita/open source (Princípio III).
@@ -195,4 +213,4 @@ backend são exibidas uma única vez, com aviso claro de não-reexibição (SPE-
   Constraints 1–6 são checados contra os artefatos (spec.md, plan.md,
   tasks.md) e contra o código entregue.
 
-**Version**: 2.0.0 | **Ratified**: 2026-10-30 | **Last Amended**: 2026-11-06
+**Version**: 2.1.0 | **Ratified**: 2026-10-30 | **Last Amended**: 2026-11-10
