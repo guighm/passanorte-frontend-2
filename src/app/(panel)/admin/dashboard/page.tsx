@@ -1,19 +1,19 @@
-// Placeholder da seção admin/dashboard — definida na SPE-07 (SPE-01 US2 T019,
-// estático por análise E1). Acesso exclusivo do administrador (RF03).
-import PlaceholderSection from "@/shared/components/PlaceholderSection";
+// Página do Dashboard e Insights (SPE-07 T007 — padrão de tela fina das
+// SPE-02..06): Server Component mínimo renderizando o DashboardView client
+// (dados client-side via TanStack Query + túnel BFF — Constraint 5).
+// Acesso exclusivo do administrador: guardas da SPE-01 em src/proxy.ts
+// cobrem /admin/* (FR-001, sem duplicação).
 
-export default function AdminPage() {
+import DashboardView from "@/features/dashboard/components/DashboardView";
+
+export default function AdminDashboardPage() {
   return (
-    <div className="mx-auto max-w-4xl">
-      <PlaceholderSection
-        title="dashboard"
-        description="Seção administrativa com implementação definida na spec correspondente."
-        spec="SPE-07"
-      />
+    <div className="mx-auto max-w-6xl">
+      <DashboardView />
     </div>
   );
 }
 
 export const metadata = {
-  title: "dashboard — PassaNorte",
+  title: "Dashboard — PassaNorte",
 };

@@ -1,16 +1,17 @@
 "use client";
 
-// Módulo INTERNO do SpotMapPicker: contém TODAS as importações de
-// leaflet/react-leaflet. **Leaflet NÃO é avaliável em Node** ("window is
-// not defined" na importação — bug revelado pelo SSR em dev) — este
-// módulo só pode ser carregado via `next/dynamic({ ssr: false })` a partir
-// de `SpotMapPicker.tsx` (o import estático na cadeia client quebra a
-// renderização server-side do segment inteiro).
+// Módulo INTERNO do SpotMapPicker (SPE-03): importa TODA a lógica de
+// marker/handler. **Leaflet NÃO é avaliável em Node** — este módulo só é
+// carregado via `next/dynamic({ ssr: false })` a partir de
+// `SpotMapPicker.tsx`. SPE-07 T006: a BASE de tiles foi extraída para
+// `src/shared/components/OsmBaseMap` (Constraint 3 — integração definida
+// uma única vez); este módulo agora só compõe o marker arrastável e o
+// handler de clique sobre a base — comportamento PRESERVADO da SPE-03.
 
 import { useMemo } from "react";
 import L from "leaflet";
-import { MapContainer, Marker, TileLayer, useMapEvents } from "react-leaflet";
-import "leaflet/dist/leaflet.css";
+import { Marker, useMapEvents } from "react-leaflet";
+import LeafletBaseMap from "@/shared/components/OsmBaseMap/LeafletBaseMap";
 import markerIconPng from "leaflet/dist/images/marker-icon.png";
 import markerIcon2xPng from "leaflet/dist/images/marker-icon-2x.png";
 import markerShadowPng from "leaflet/dist/images/marker-shadow.png";
@@ -69,34 +70,26 @@ export default function SpotLeafletMap({
     latitude !== null && longitude !== null ? { lat: latitude, lng: longitude } : undefined;
 
   return (
-    <div className="h-72 w-full overflow-hidden rounded-md border border-border">
-      <MapContainer
-        className="h-full w-full"
-        center={[center.lat, center.lng]}
-        zoom={zoom}
-        scrollWheelZoom
-        style={{ height: "100%", width: "100%" }}
-      >
-        {/* Tiles OpenStreetMap — gratuitos, sem chave; attribution legal obrigatória */}
-        <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+    <LeafletBaseMap
+      center={center}
+      zoom={zoom}
+      scrollWheelZoom
+      className="h-72 w-full"
+    >
+      <ClickHandler onChange={onChange} />
+      {position ? (
+        <Marker
+          position={position}
+          icon={spotMarkerIcon()}
+          draggable
+          eventHandlers={{
+            dragend: (event) => {
+              const latLng = (event.target as L.Marker).getLatLng();
+              onChange(latLng.lat, latLng.lng);
+            },
+          }}
         />
-        <ClickHandler onChange={onChange} />
-        {position ? (
-          <Marker
-            position={position}
-            icon={spotMarkerIcon()}
-            draggable
-            eventHandlers={{
-              dragend: (event) => {
-                const latLng = (event.target as L.Marker).getLatLng();
-                onChange(latLng.lat, latLng.lng);
-              },
-            }}
-          />
-        ) : null}
-      </MapContainer>
-    </div>
+      ) : null}
+    </LeafletBaseMap>
   );
 }

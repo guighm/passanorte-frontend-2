@@ -21,10 +21,16 @@ Executar a partir da raiz do repositório:
 > **Emenda v1.2.0 (2026-11-01)** — alinhamento à estrutura atual de `src/` e às dependências reais do `package.json`: dependência `cn` (merge de class names, substituto de clsx + tailwind-merge) sancionada na Constraint 1; utilitários transversais `src/shared/lib` (`http.ts`, `cn.ts`) incorporados ao Princípio IV; RBAC de superfície referenciado a `src/features/auth/guards` no Princípio II.
 >
 > **Emenda v1.2.1 (2026-11-01)** — Princípio IV passa a citar também o mapa de rotas do App Router (`(panel)/admin/{dashboard,attractions,events,tours,employees}`, `(panel)/benefits`, `login/`, túnel BFF `src/app/api/proxy/[...path]`); toda tela nova entra nessa árvore. Re-visão confirmou dependências e módulos já cobertos pela 1.2.0.
+>
+> **Emenda v2.0.0 (2026-11-06, MAJOR)** — Constraint 3 (Mapas) REDEFINIDA INCOMPATIVELMENTE: a integração de mapa migra de Google Maps para **OpenStreetMap via `react-leaflet`/`leaflet`** (decisão do owner — o Google exige billing com pré-pago, conflitando com RNF15; OSM é gratuito/open source, e o RNF18 já previa "Google Maps ou OSM"). `@vis.gl/react-google-maps` removida da lista sancionada; `SpotMapPicker` (SPE-03) migrou com a mesma interface de props e SPE-07 consome a integração OSM.
+>
+> **Emenda v2.1.0 (2026-11-10, MINOR)** — Constraint 1: `@zxing/browser` + peer `@zxing/library` sancionadas para o scanner de câmera da concessão de brindes (SPE-06/RF21) — única opção mantida ativamente, com MIT e controles de pausa exigidos pelo FR-009 (research D1 da SPE-06).
+>
+> **Emenda v2.2.0 (2026-11-10, MINOR)** — Constraint 4: `recharts` 3.x sancionada como biblioteca de gráficos do Dashboard (SPE-07) — 3.10.1 já instalada no `package.json`, MIT, peer-deps oficiais `react ^19.0.0` (`LineChart` para a série diária do RF07; `BarChart` horizontal para RF09/RF10 — research D1 da SPE-07). Nenhuma segunda biblioteca de gráficos sem emenda.
 
 ---
 
-## Constituição (conteúdo aprovado — v1.2.1)
+## Constituição (conteúdo aprovado — v2.2.0)
 
 Este documento governa o desenvolvimento do **Painel Administrativo PassaNorte** (Next.js 16 / React 19), consumidor da API RESTful FastAPI. `docs/SPECS.md` é o índice das features (SPE-01..07) e fixa a ordem de implementação; os artefatos Spec Kit da feature corrente ficam em `specs/<NNN>-<nome>/` (spec.md, plan.md, tasks.md, contracts/, checklists/).
 
@@ -50,7 +56,7 @@ Toda interação com a API expõe, de forma visível e distinta, os estados de c
 1. **Stack obrigatória:** Next.js 16 (App Router) + React 19 + TypeScript + Tailwind CSS 4, gerenciado com pnpm. Bibliotecas sancionadas e já instaladas: TanStack Query (dados assíncronos), TanStack Table (tabelas), Base UI (primitivos de UI), React Hook Form + Zod (formulários e validação), Zustand (estado de cliente), lucide-react (ícones), class-variance-authority (variantes de componente), react-error-boundary, `cn` (merge de class names Tailwind, substituto de clsx + tailwind-merge, reexposto em `src/shared/lib/cn.ts`), `react-leaflet` + `leaflet` (mapas OSM, Constraint 3), `@zxing/browser` + peer `@zxing/library` (scanner de câmera da concessão de brindes — SPE-06, RF21; MIT, controles de pausa exigidos pelo FR-009). Versões do `package.json` são a referência; nova dependência exige justificativa no artefato Spec Kit e preferência por opção gratuita/open source (Princípio III).
 2. **Documentação vigente:** antes de escrever código Next.js/React, ler os guias em `node_modules/next/dist/docs/` (`AGENTS.md`): APIs e convenções divergem de versões antigas do framework; APIs marcadas como deprecated **NÃO** devem ser usadas.
 3. **Mapas:** integração **OpenStreetMap via `react-leaflet` + `leaflet`** (RNF18 — "Google Maps ou OSM"), definida uma única vez (SPE-03, `SpotMapPicker`) e reusada pelo Dashboard (SPE-07); bibliotecas gratuitas e open source, **sem chave de API nem billing** (RNF15 — decisão do owner em 2026-11-06 em detrimento do pré-pago do Google Maps); assets de ícone/marker do pacote servidos pelo próprio bundle, sem CDN. Nenhuma segunda integração de mapa, nenhuma fonte de tiles paga por chave, e nenhuma reversão ao Google Maps sem emenda desta constituição.
-4. **Gráficos:** restritos ao Dashboard (SPE-07). Nenhuma biblioteca de gráficos está instalada; a escolha (client-side, compatível com React 19) é feita uma única vez no plan da SPE-07 e sancionada aqui por emenda, se necessário.
+4. **Gráficos:** restritos ao Dashboard (SPE-07). `recharts` 3.x sancionada — já instalada (3.10.1 no `package.json`, MIT, peer-deps oficiais `react ^19.0.0`) e escolhida no plan da SPE-07 (research D1, 2026-11-10): `LineChart` para a série diária do contador (RF07) e `BarChart` em barras horizontais para as distribuições (RF09/RF10). Nenhuma segunda biblioteca de gráficos sem emenda.
 5. **Acesso à API por caminho único:** chamadas server-side passam exclusivamente por `src/shared/lib/http.ts` (`apiFetch`/`apiJson`); chamadas client-side passam exclusivamente pelo túnel BFF `src/app/api/proxy/[...path]`. O token `Authorization` é anexado **apenas** nesses dois pontos, com política única de renovação em 401 com replay da requisição original. Nenhuma feature monta `fetch` à API por conta própria.
 6. **Qualidade:** `pnpm build` e `pnpm lint` (eslint) sem erros é pré-condição para encerrar qualquer task; acessibilidade mínima (navegação por teclado, labels em formulários) faz parte da definição de pronto.
 
@@ -68,4 +74,4 @@ Toda interação com a API expõe, de forma visível e distinta, os estados de c
 - **Emendas:** editar o documento, atualizar `Last Amended`, incrementar a versão (SemVer — MAJOR: princípio removido/redefinido incompativelmente; MINOR: novo princípio ou seção; PATCH: esclarecimentos) e registrar o resumo da mudança no Sync Impact Report. Cópia legível em `docs/CONSTITUTION.md` deve ser mantida em sincronia.
 - **Compliance review:** a cada ciclo Spec Kit, os princípios I–V e as Constraints 1–6 são checados contra os artefatos (spec.md, plan.md, tasks.md) e contra o código entregue.
 
-**Version**: 2.1.0 | **Ratified**: 2026-10-30 | **Last Amended**: 2026-11-10
+**Version**: 2.2.0 | **Ratified**: 2026-10-30 | **Last Amended**: 2026-11-10

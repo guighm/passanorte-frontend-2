@@ -1,8 +1,23 @@
 <!--
   Sync Impact Report
   ==================
-  Version change: 2.0.0 → 2.1.0
-  Modified principles: Constraint 1 — dependências `@zxing/browser` 0.2.1 +
+  Version change: 2.1.0 → 2.2.0
+  Modified principles: Constraint 4 — dependência `recharts` 3.x (MIT,
+    peer-deps oficiais React 19; 3.10.1 já presente no package.json) sancionada
+    como biblioteca de gráficos do Dashboard (SPE-07): `LineChart` para a série
+    diária do contador (RF07) e `BarChart` vertical (barras horizontais) para
+    as distribuições por país/interesses (RF09/RF10) — clarificações Q2/Q4 da
+    spec. Justificativa no research D1 da SPE-07: decisão pendente da
+    constraint resolvida no plan da SPE-07 conforme previsto, dependência já
+    instalada pelo owner, peer `react ^19.0.0` declarado, alternativas (@nivo,
+    visx, Chart.js) sem ganho. RNF15 (MIT/gratuita).
+  Added sections: (none)
+  Removed sections: (none)
+  Follow-up TODOs: (none)
+  Motivo da emenda: sanção prevista na própria Constraint 4 para a escolha do
+    plan da SPE-07 — acréscimo de dependência à lista ⇒ bump MINOR.
+  Histórico: 2.0.0 → 2.1.0 (2026-11-10) — Modified principles: Constraint 1 —
+    dependências `@zxing/browser` 0.2.1 +
     `@zxing/library` 0.23.0 (peer) sancionadas para o scanner de câmera da
     concessão de brindes (SPE-06, RF21/RNF18-análogo de leitura): única
     opção mantida ativamente (última release 2026-07, MIT — alternativas
@@ -167,9 +182,12 @@ backend são exibidas uma única vez, com aviso claro de não-reexibição (SPE-
    sem CDN. Nenhuma segunda integração de mapa, nenhuma fonte de tiles
    paga por chave, e nenhuma reversão ao Google Maps sem emenda desta
    constituição.
-4. **Gráficos:** restritos ao Dashboard (SPE-07). Nenhuma biblioteca de gráficos
-   está instalada; a escolha (client-side, compatível com React 19) é feita uma
-   única vez no plan da SPE-07 e sancionada aqui por emenda, se necessário.
+4. **Gráficos:** restritos ao Dashboard (SPE-07). `recharts` 3.x sancionada —
+   já instalada (3.10.1 no `package.json`, MIT, peer-deps oficiais
+   `react ^19.0.0`) e escolhida no plan da SPE-07 (research D1, 2026-11-10):
+   `LineChart` para a série diária do contador (RF07) e `BarChart` em
+   barras horizontais para as distribuições (RF09/RF10). Nenhuma segunda
+   biblioteca de gráficos sem emenda.
 5. **Acesso à API por caminho único:** chamadas server-side passam
    exclusivamente por `src/shared/lib/http.ts` (`apiFetch`/`apiJson`); chamadas
    client-side passam exclusivamente pelo túnel BFF
@@ -213,4 +231,4 @@ backend são exibidas uma única vez, com aviso claro de não-reexibição (SPE-
   Constraints 1–6 são checados contra os artefatos (spec.md, plan.md,
   tasks.md) e contra o código entregue.
 
-**Version**: 2.1.0 | **Ratified**: 2026-10-30 | **Last Amended**: 2026-11-10
+**Version**: 2.2.0 | **Ratified**: 2026-10-30 | **Last Amended**: 2026-11-10
